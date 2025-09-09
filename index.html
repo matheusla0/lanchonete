@@ -105,8 +105,10 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
   <div style="display:flex;align-items:center;gap:8px">
     <strong id="cartTotalBar">R$ 0,00</strong>
     <button class="btn brand" id="openCheckout">Ver Carrinho</button>
+    <button class="btn brand" id="finalizeOrder">Finalizar Pedido</button>
   </div>
 </div>
+
 
 <!-- Checkout fullscreen -->
 <div class="checkout" id="checkout">
@@ -115,7 +117,12 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
       <h3>Finalizar pedido</h3>
       <button class="btn" id="closeCheckout">Fechar</button>
     </div>
+	
     <div class="row">
+  <label for="clientName">Nome do Cliente</label>
+  <input type="text" id="clientName" placeholder="Digite seu nome completo" />
+</div>
+
       <div>
         <h4>Entrega ou retirada</h4>
         <div class="radio-row">
@@ -123,9 +130,9 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
           <label class="radio"><input type="radio" name="tipo" value="entrega"> Entrega</label>
         </div>
         <div id="enderecoBox" style="display:none;margin-top:10px">
-          <label>Endereço</label><input placeholder="Rua, número, bairro" />
-          <label>Cidade</label><input placeholder="Cidade" />
-          <label>CEP</label><input placeholder="00000-000" />
+          <label>Endereço</label><input placeholder="Rua" />
+          <label>Número da casa</label><input placeholder="Ex: 155" />
+          <label>Bairro</label><input placeholder="Ex: Jardim Novo, Renovação, Vila Nova" />
         </div>
       </div>
       <div>
@@ -201,9 +208,11 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
     <div class="confirm-actions">
       <button class="btn" id="confirmCancel">Cancelar</button>
       <button class="btn brand" id="confirmOk">Confirmar</button>
+	  
     </div>
   </div>
 </div>
+
 
 <script>
 // Dados iniciais
@@ -293,6 +302,20 @@ function confirmRemove(id){
 confirmOk.addEventListener('click',()=>{ if(confirmCallback) confirmCallback(); });
 confirmCancel.addEventListener('click',()=>{ confirmDialog.style.display='none'; confirmCallback=null; });
 
+function confirmRemoveCat(nome){
+  confirmMsg.textContent = `Deseja remover a categoria "${nome}" e todos os produtos dela?`;
+  confirmDialog.style.display='flex';
+  confirmCallback = () => {
+    categorias = categorias.filter(c => c.nome !== nome);
+    produtos = produtos.filter(p => p.categoria !== nome);
+    renderAdminCats();  // atualiza lista de categorias admin
+    renderProdutos();   // atualiza lista de produtos cliente
+    renderCats();       // atualiza categorias cliente
+    confirmDialog.style.display = 'none';
+    confirmCallback = null;
+  };
+}
+
 // Funções quantidade
 function increaseQty(id){ let item = cart.find(i => i.id === id); if(item) item.qtd++; renderCart(); renderResumo();}
 function decreaseQty(id){ let item = cart.find(i => i.id === id); if(item){item.qtd--; if(item.qtd <= 0) cart = cart.filter(i => i.id !== id);} renderCart(); renderResumo();}
@@ -315,6 +338,8 @@ document.querySelectorAll('.tab').forEach(tab=>{
 
 // Checkout
 document.getElementById('openCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='block'; renderResumo();});
+document.getElementById('finalizeOrder').addEventListener('click', () => {document.getElementById('checkout').style.display = 'block';renderResumo();
+});
 document.getElementById('closeCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='none';});
 document.querySelectorAll('input[name="tipo"]').forEach(r=>{r.addEventListener('change',()=>{document.getElementById('enderecoBox').style.display=r.value==='entrega'?'block':'none'})});
 
@@ -347,39 +372,74 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('password').value='';
   });
 });
+// Alterna ativo/inativo de produtos
+function toggleProd(id){
+  let p = produtos.find(x => x.id === id);
+  if(p){
+    p.ativo = !p.ativo;
+    renderAdminProds();
+    renderProdutos();
+  }
+}
+
+// Alterna ativo/inativo de categorias
+function toggleCat(nome){
+  let c = categorias.find(x => x.nome === nome);
+  if(c){
+    c.ativo = !c.ativo;
+    renderAdminCats();
+    renderCats();
+  }
+}
 
 // Admin categorias
 function renderAdminCats(){
-  const list=document.getElementById('categoryList');
-  list.innerHTML=categorias.map(c=>`
+  const list = document.getElementById('categoryList');
+  list.innerHTML = categorias.map(c => `
     <div class="cat-item">
       <span>${c.nome}</span>
-      <button class="btn" onclick="removeCat('${c.nome}')">Remover</button>
+      <div style="display:flex;gap:4px">
+        <button class="btn" style="background:${c.ativo ? '#fbbf24' : '#6b7280'}; color:#0a1220" onclick="toggleCat('${c.nome}')">
+          ${c.ativo ? 'Ativo' : 'Inativo'}
+        </button>
+        <button class="btn" style="background:#ef4444;color:#fff" onclick="confirmRemoveCat('${c.nome}')">Remover</button>
+      </div>
     </div>
   `).join('');
-  const sel=document.getElementById('prodCategory');
-  sel.innerHTML='<option value="">Selecione a categoria</option>'+categorias.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+
+  const sel = document.getElementById('prodCategory');
+  sel.innerHTML = '<option value="">Selecione a categoria</option>' + 
+    categorias.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
 }
+
+
 document.getElementById('btnAddCat').addEventListener('click',()=>{
   const val=document.getElementById('newCategory').value.trim();
   if(val && !categorias.find(c=>c.nome===val)){categorias.push({nome:val,ativo:true}); renderAdminCats(); document.getElementById('newCategory').value=''; renderCats();}
 });
+
 function removeCat(nome){categorias=categorias.filter(c=>c.nome!==nome); produtos=produtos.filter(p=>p.categoria!==nome); renderAdminCats(); renderProdutos(); renderCats();}
 
 // Admin produtos
 function renderAdminProds(){
   const table=document.getElementById('prodTable');
-  table.innerHTML='<tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Ações</th></tr>'+
+  table.innerHTML='<tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Status</th><th>Ações</th></tr>'+
     produtos.map(p=>`<tr>
       <td>${p.nome}</td>
       <td>${p.categoria}</td>
       <td>${fmt(p.preco)}</td>
+      <td>
+        <button class="btn" style="background:${p.ativo ? '#fbbf24' : '#6b7280'}; color:#0a1220" onclick="toggleProd(${p.id})">
+          ${p.ativo ? 'Ativo' : 'Inativo'}
+        </button>
+      </td>
       <td class="action-btns">
         <button class="btn" onclick="editProd(${p.id})">Editar</button>
         <button class="btn" onclick="removeProd(${p.id})" style="background:#ef4444;color:#fff">Remover</button>
       </td>
     </tr>`).join('');
 }
+
 
 document.getElementById('btnAddProd').addEventListener('click',()=>{
   const n=document.getElementById('prodName').value;
@@ -406,6 +466,7 @@ document.getElementById('btnCancelEdit').addEventListener('click',()=>{
   document.getElementById('prodName').value=''; document.getElementById('prodDesc').value=''; document.getElementById('prodPrice').value=''; document.getElementById('prodCategory').value='';
 });
 
+
 function editProd(id){
   let p=produtos.find(x=>x.id===id);
   document.getElementById('prodName').value=p.nome;
@@ -415,7 +476,17 @@ function editProd(id){
   editProdId=id;
   document.getElementById('btnCancelEdit').style.display='inline-block';
 }
-function removeProd(id){if(confirm('Deseja remover este produto?')){produtos=produtos.filter(p=>p.id!==id); renderAdminProds(); renderProdutos();}}
+function removeProd(id){
+  confirmMsg.textContent = 'Deseja remover este produto?';
+  confirmDialog.style.display = 'flex';
+  confirmCallback = () => {
+    produtos = produtos.filter(p => p.id !== id);
+    renderAdminProds();
+    renderProdutos();
+    confirmDialog.style.display = 'none';
+    confirmCallback = null;
+  };
+}
 
 // Inicial
 renderProdutos();
