@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PedidoFácil — Mobile Grid</title>
+<style>
+:root{
+  --bg:#0f1115; --card:#171922; --muted:#a9b0c1; --text:#e8ecf3; --brand:#6ee7b7; --brand-2:#22d3ee; --danger:#ef4444;
+  --ring: rgba(110,231,183,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; max-width:480px; margin:0 auto;}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;border:none}
+
+/* Header */
+.header{position:sticky;top:0;background:#141722;z-index:100;}
+.header-inner{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #25283a}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600}
+.logo{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--brand),var(--brand-2));}
+.tabs{display:flex;gap:6px}
+.tab{padding:5px 10px;border-radius:999px;border:1px solid #2a2d42;color:var(--muted);font-size:13px}
+.tab.active{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#0a1220;border:none}
+
+/* Categorias cliente */
+.cats{display:flex;overflow-x:auto;gap:8px;padding:10px;background:#141722;}
+.cat{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid #2a2d42;color:#c7cede;white-space:nowrap;font-size:14px;position:relative}
+.cat.active{background:linear-gradient(90deg,rgba(110,231,183,.15),rgba(34,211,238,.15));border-color:#2a3148}
+
+/* Produtos grid cliente */
+.list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+.product{display:flex;flex-direction:column;padding:10px;background:var(--card);border:1px solid #24273a;border-radius:14px}
+.p-body{flex:1;margin-bottom:6px}
+.p-title{font-weight:600;margin-bottom:4px;font-size:14px}
+/* descrição aumentada */
+.p-desc{
+  color:#aab2c6;
+  font-size:12px;
+  margin-bottom:6px;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.p-foot{display:flex;justify-content:space-between;align-items:center}
+.price{font-weight:700;font-size:13px}
+.thumb{width:100%;height:80px;background:#0b0d13;background-size:cover;background-position:center;border-radius:8px;margin-top:6px}
+.btn{padding:6px 10px;border-radius:8px;background:#1c1f2c;color:#dbe3f7;font-size:12px}
+.btn.brand{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#0a1220}
+
+/* Carrinho fixo */
+.cartbar{position:fixed;bottom:12px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;background:#171a24;border:1px solid #2a3148;border-radius:14px;padding:10px;z-index:200}
+.cartbar strong{font-size:15px}
+
+/* Checkout fullscreen */
+.checkout{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;overflow:auto}
+.sheet{padding:16px}
+.sheet h3{margin-bottom:12px}
+.row{display:flex;flex-direction:column;gap:12px}
+label{font-size:12px;color:#b9c2dd;margin-bottom:4px;display:block}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #2b3050;background:#121522;color:#fff}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline:none}
+.radio-row{display:flex;gap:10px;flex-wrap:wrap}
+.radio{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #2b3050;border-radius:8px;font-size:13px}
+
+/* Admin e login */
+.admin{display:none;padding:12px}
+.card{background:var(--card);border:1px solid #24283a;border-radius:12px;padding:12px;margin-bottom:12px}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th,.table td{padding:8px;border-bottom:1px solid #2a2d42;text-align:left}
+
+/* categorias admin listadas */
+.cat-item {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:6px;
+  border:1px solid #2a2d42;
+  border-radius:8px;
+  padding:6px 10px;
+  margin-bottom:6px;
+  background:#1c1f2c;
+}
+
+.admin-login {display: none; padding: 20px; max-width: 320px; margin: 20px auto; background: var(--card); border-radius: 12px; border: 1px solid #24283a;}
+.admin-login h3 {margin-bottom: 16px; text-align: center;}
+.admin-login input {width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #2b3050; background: #121522; color: #fff; font-size: 14px;}
+.admin-login button {width: 100%; padding: 10px; border-radius: 8px; background: linear-gradient(90deg,var(--brand),var(--brand-2)); color: #0a1220; font-weight: 600; font-size: 15px;}
+.admin-login .error {color: var(--danger); margin-bottom: 12px; text-align: center; font-size: 14px;}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand"><div class="logo"></div><span>PedidoFácil</span></div>
+    <nav class="tabs">
+      <a class="tab active" data-tab="cliente">Cliente</a>
+      <a class="tab" data-tab="admin">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<div class="cats" id="cats"></div>
+
+<main id="cliente">
+  <div class="list" id="produtos"></div>
+</main>
+
+<div class="cartbar" id="cartbar" style="display:none">
+  <div>🛒 <strong id="cartCount">0</strong> itens</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <strong id="cartTotalBar">R$ 0,00</strong>
+    <button class="btn brand" id="openCheckout">Finalizar</button>
+  </div>
+</div>
+
+<!-- Checkout fullscreen -->
+<div class="checkout" id="checkout">
+  <div class="sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Finalizar pedido</h3>
+      <button class="btn" id="closeCheckout">Fechar</button>
+    </div>
+    <div class="row">
+      <div>
+        <h4>Entrega ou retirada</h4>
+        <div class="radio-row">
+          <label class="radio"><input type="radio" name="tipo" value="retirada" checked> Retirada</label>
+          <label class="radio"><input type="radio" name="tipo" value="entrega"> Entrega</label>
+        </div>
+        <div id="enderecoBox" style="display:none;margin-top:10px">
+          <label>Endereço</label><input placeholder="Rua, número, bairro" />
+          <label>Cidade</label><input placeholder="Cidade" />
+          <label>CEP</label><input placeholder="00000-000" />
+        </div>
+      </div>
+      <div>
+        <h4>Pagamento</h4>
+        <div class="radio-row">
+          <label class="radio"><input type="radio" name="pg" value="pix" checked> Pix</label>
+          <label class="radio"><input type="radio" name="pg" value="cartao"> Cartão</label>
+          <label class="radio"><input type="radio" name="pg" value="dinheiro"> Dinheiro</label>
+        </div>
+        <div style="margin-top:12px;display:flex;justify-content:space-between">
+          <span>Total</span><strong id="checkoutTotal">R$ 0,00</strong>
+        </div>
+        <button class="btn brand" id="btnEnviar" style="margin-top:12px">Enviar pedido</button>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <h4>Resumo</h4>
+      <div id="resumo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Login Admin -->
+<section class="admin-login" id="adminLogin">
+  <h3>Login Admin</h3>
+  <div class="error" id="loginError" style="display:none"></div>
+  <input type="text" id="username" placeholder="Usuário" autocomplete="username" />
+  <input type="password" id="password" placeholder="Senha" autocomplete="current-password" />
+  <button id="btnLogin">Entrar</button>
+</section>
+
+<!-- Admin -->
+<main class="admin" id="admin" style="display:none">
+  <div style="display:flex; justify-content: flex-end; padding: 0 12px 8px;">
+    <button class="btn" id="btnLogout" style="background:#ef4444; color:#fff; border-radius:8px;">Sair</button>
+  </div>
+
+  <!-- Gerenciar Categorias -->
+  <div class="card">
+    <h3>Gerenciar Categorias</h3>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input id="newCategory" placeholder="Nome da categoria" />
+      <button class="btn brand" id="btnAddCat">Adicionar</button>
+    </div>
+    <div id="categoryList"></div>
+  </div>
+
+  <!-- Adicionar Produto -->
+  <div class="card">
+    <h3>Adicionar Produto</h3>
+    <input id="prodName" placeholder="Nome" />
+    <textarea id="prodDesc" placeholder="Descrição"></textarea>
+    <input id="prodPrice" placeholder="Preço" type="number" step="0.01" />
+    <select id="prodCategory"><option value="">Selecione a categoria</option></select>
+    <input type="file" id="prodImage" accept="image/*" />
+    <button class="btn brand" id="btnAddProd">Salvar Produto</button>
+    <button class="btn" id="btnCancelEdit" style="display:none;background:#6b7280;color:#fff;margin-top:6px">Cancelar Edição</button>
+  </div>
+
+  <!-- Tabela Produtos -->
+  <div class="card">
+    <h3>Produtos</h3>
+    <table class="table" id="prodTable"></table>
+  </div>
+</main>
+
+<script>
+// Dados iniciais
+let produtos=[
+  {id:1,nome:'X-Burger',desc:'Pão brioche, blend 150g, queijo.',preco:24.9,categoria:'Lanches',img:'',ativo:true},
+  {id:2,nome:'X-Salada',desc:'Alface, tomate, queijo prato.',preco:26.9,categoria:'Lanches',img:'',ativo:true},
+  {id:3,nome:'Refrigerante Lata',desc:'350ml gelado.',preco:6,categoria:'Bebidas',img:'',ativo:true},
+  {id:4,nome:'Suco Natural',desc:'Laranja 400ml.',preco:10,categoria:'Bebidas',img:'',ativo:true},
+  {id:5,nome:'Batata Média',desc:'Porção crocante.',preco:12,categoria:'Acompanhamentos',img:'',ativo:true},
+  {id:6,nome:'Brownie',desc:'Com calda.',preco:9.5,categoria:'Sobremesas',img:'',ativo:true}
+];
+let categorias=[{nome:'Lanches',ativo:true},{nome:'Bebidas',ativo:true},{nome:'Acompanhamentos',ativo:true},{nome:'Sobremesas',ativo:true}];
+let filtro='Lanches';
+let cart=[];
+let editProdId=null;
+
+const elList=document.getElementById('produtos');
+const cartbar=document.getElementById('cartbar');
+const cartCount=document.getElementById('cartCount');
+const cartTotalBar=document.getElementById('cartTotalBar');
+
+function fmt(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+
+// Render produtos cliente
+function renderProdutos(){
+  elList.innerHTML = produtos.filter(p=>p.categoria===filtro && p.ativo).map(p=>`
+    <div class='product'>
+      <div class='p-body'>
+        <div class='p-title'>${p.nome}</div>
+        <div class='p-desc'>${p.desc}</div>
+        <div class='p-foot'>
+          <div class='price'>${fmt(p.preco)}</div>
+          <button class='btn' onclick='add(${p.id})'>+ Carrinho</button>
+        </div>
+      </div>
+      <div class='thumb' style="background-image:url('${p.img||''}')"></div>
+    </div>
+  `).join('');
+}
+
+// Carrinho
+function add(id){
+  let it=cart.find(i=>i.id===id);
+  if(it) it.qtd++; else {let p=produtos.find(x=>x.id===id); cart.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1})}
+  renderCart();
+}
+function renderCart(){
+  let total=cart.reduce((s,i)=>s+i.preco*i.qtd,0);
+  cartCount.textContent=cart.reduce((s,i)=>s+i.qtd,0);
+  cartTotalBar.textContent=fmt(total);
+  cartbar.style.display=cart.length?'flex':'none';
+}
+
+// Categorias cliente
+const catEl=document.getElementById('cats');
+function renderCats(){
+  catEl.innerHTML=categorias.filter(c=>c.ativo).map(c=>`<div class='cat ${c.nome===filtro?'active':''}' onclick="filtro='${c.nome}';renderProdutos();renderCats()">${c.nome}</div>`).join('');
+}
+renderCats();
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('cliente').style.display=tab.dataset.tab==='cliente'?'block':'none';
+    document.getElementById('adminLogin').style.display=tab.dataset.tab==='admin'?'block':'none';
+    document.getElementById('admin').style.display='none';
+  })
+});
+
+// Checkout
+document.getElementById('openCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='block'; renderResumo();});
+document.getElementById('closeCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='none';});
+document.querySelectorAll('input[name="tipo"]').forEach(r=>{r.addEventListener('change',()=>{document.getElementById('enderecoBox').style.display=r.value==='entrega'?'block':'none'})});
+function renderResumo(){
+  const resumo=document.getElementById('resumo');
+  resumo.innerHTML=cart.map(i=>`<div>${i.qtd}x ${i.nome} - ${fmt(i.preco*i.qtd)}</div>`).join('');
+  document.getElementById('checkoutTotal').textContent=fmt(cart.reduce((s,i)=>s+i.preco*i.qtd,0));
+}
+
+// Admin login
+const USER='admin', PASS='123';
+document.getElementById('btnLogin').addEventListener('click',()=>{
+  const u=document.getElementById('username').value;
+  const p=document.getElementById('password').value;
+  if(u===USER && p===PASS){
+    document.getElementById('adminLogin').style.display='none';
+    document.getElementById('admin').style.display='block';
+    renderAdmin();
+  }else{
+    document.getElementById('loginError').style.display='block';
+    document.getElementById('loginError').textContent='Usuário ou senha incorretos';
+  }
+});
+document.getElementById('btnLogout').addEventListener('click',()=>{document.getElementById('adminLogin').style.display='block'; document.getElementById('admin').style.display='none';});
+
+// Admin categorias
+function renderAdminCats(){
+  const el=document.getElementById('categoryList');
+  el.innerHTML = categorias.map((c,i)=>`
+    <div class="cat-item">
+      <span>${c.nome}</span>
+      <div style="display:flex;gap:4px">
+        <button class="btn" onclick="moveCatUp(${i})" style="background:#3b82f6;color:#fff;border-radius:8px;">↑</button>
+        <button class="btn" onclick="moveCatDown(${i})" style="background:#3b82f6;color:#fff;border-radius:8px;">↓</button>
+        <button class="btn" onclick="toggleCat(${i})" style="background:${c.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px;">${c.ativo?'On':'Off'}</button>
+        <button class="btn" onclick="delCat(${i})" style="background:#ef4444;color:#fff;border-radius:8px;">Excluir</button>
+      </div>
+    </div>
+  `).join('');
+}
+function moveCatUp(i){if(i>0){[categorias[i],categorias[i-1]]=[categorias[i-1],categorias[i]];renderAdminCats();renderCats();renderProdCats()}}
+function moveCatDown(i){if(i<categorias.length-1){[categorias[i],categorias[i+1]]=[categorias[i+1],categorias[i]];renderAdminCats();renderCats();renderProdCats()}}
+function toggleCat(i){categorias[i].ativo=!categorias[i].ativo;renderAdminCats();renderCats()}
+function delCat(i){categorias.splice(i,1);renderAdminCats();renderCats();renderProdCats()}
+document.getElementById('btnAddCat').addEventListener('click',()=>{const n=document.getElementById('newCategory').value;if(n){categorias.push({nome:n,ativo:true});renderAdminCats();renderCats();renderProdCats();document.getElementById('newCategory').value=''}});
+
+// Admin produtos
+function renderProdCats(){const sel=document.getElementById('prodCategory');sel.innerHTML='<option value="">Selecione a categoria</option>'+categorias.map(c=>`<option>${c.nome}</option>`).join('');}
+function renderProdTable(){
+  const el=document.getElementById('prodTable');
+  el.innerHTML='<tr><th>Nome</th><th>Preço</th><th>Categoria</th><th>Status</th><th>Ações</th></tr>'+
+    produtos.map((p,i)=>`
+      <tr>
+        <td>${p.nome}</td>
+        <td>${fmt(p.preco)}</td>
+        <td>${p.categoria}</td>
+        <td><button class="btn" onclick="toggleProd(${i})" style="background:${p.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px;">${p.ativo?'On':'Off'}</button></td>
+        <td>
+          <button class="btn" onclick="editProd(${i})" style="background:#3b82f6;color:#fff;border-radius:8px;">Editar</button>
+          <button class="btn" onclick="delProd(${i})" style="background:#ef4444;color:#fff;border-radius:8px;">Remover</button>
+        </td>
+      </tr>
+    `).join('');
+}
+function toggleProd(i){produtos[i].ativo=!produtos[i].ativo;renderProdTable();renderProdutos();}
+function delProd(i){produtos.splice(i,1);renderProdTable();renderProdutos();}
+function editProd(i){
+  const p=produtos[i];
+  document.getElementById('prodName').value=p.nome;
+  document.getElementById('prodDesc').value=p.desc;
+  document.getElementById('prodPrice').value=p.preco;
+  document.getElementById('prodCategory').value=p.categoria;
+  editProdId=p.id;
+  document.getElementById('btnAddProd').textContent='Salvar Alterações';
+  document.getElementById('btnCancelEdit').style.display='block';
+}
+document.getElementById('btnCancelEdit').addEventListener('click',()=>{editProdId=null;document.getElementById('btnAddProd').textContent='Salvar Produto';document.getElementById('btnCancelEdit').style.display='none';document.getElementById('prodName').value='';document.getElementById('prodDesc').value='';document.getElementById('prodPrice').value='';document.getElementById('prodCategory').value='';document.getElementById('prodImage').value='';});
+document.getElementById('btnAddProd').addEventListener('click',()=>{
+  const nome=document.getElementById('prodName').value;
+  const desc=document.getElementById('prodDesc').value;
+  const preco=parseFloat(document.getElementById('prodPrice').value);
+  const cat=document.getElementById('prodCategory').value;
+  const file=document.getElementById('prodImage').files[0];
+
+  if(!nome||!preco||!cat){alert('Preencha os campos obrigatórios');return;}
+
+  if(file){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      saveProduct(nome,desc,preco,cat,e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }else{
+    saveProduct(nome,desc,preco,cat,null);
+  }
+});
+function saveProduct(nome,desc,preco,cat,img){
+  if(editProdId){
+    let p=produtos.find(x=>x.id===editProdId);
+    p.nome=nome;p.desc=desc;p.preco=preco;p.categoria=cat;if(img)p.img=img;
+  }else{
+    const id=Math.max(0,...produtos.map(p=>p.id))+1;
+    produtos.push({id,nome,desc,preco,categoria:cat,img:img||'',ativo:true});
+  }
+  renderProdTable();renderProdutos();renderCats();renderProdCats();
+  document.getElementById('prodName').value='';document.getElementById('prodDesc').value='';document.getElementById('prodPrice').value='';document.getElementById('prodCategory').value='';document.getElementById('prodImage').value='';
+  editProdId=null;document.getElementById('btnAddProd').textContent='Salvar Produto';document.getElementById('btnCancelEdit').style.display='none';
+}
+
+// Init
+function renderAdmin(){renderAdminCats();renderProdCats();renderProdTable();}
+renderProdutos();
+</script>
+
+</body>
+</html>
