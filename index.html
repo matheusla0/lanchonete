@@ -49,6 +49,19 @@ button{cursor:pointer;border:none}
 .btn{padding:6px 10px;border-radius:8px;background:#1c1f2c;color:#dbe3f7;font-size:12px}
 .btn.brand{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#0a1220}
 
+/* Botões de ação no admin */
+.action-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.action-btns .btn {
+  flex: 1 1 90px; /* largura mínima */
+  text-align: center;
+  min-width: 80px;
+}
+
 /* Carrinho fixo */
 .cartbar{position:fixed;bottom:12px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;background:#171a24;border:1px solid #2a3148;border-radius:14px;padding:10px;z-index:200}
 .cartbar strong{font-size:15px}
@@ -81,6 +94,7 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
   padding:6px 10px;
   margin-bottom:6px;
   background:#1c1f2c;
+  color:var(--text);
 }
 
 .admin-login {display: none; padding: 20px; max-width: 320px; margin: 20px auto; background: var(--card); border-radius: 12px; border: 1px solid #24283a;}
@@ -88,6 +102,13 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
 .admin-login input {width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #2b3050; background: #121522; color: #fff; font-size: 14px;}
 .admin-login button {width: 100%; padding: 10px; border-radius: 8px; background: linear-gradient(90deg,var(--brand),var(--brand-2)); color: #0a1220; font-weight: 600; font-size: 15px;}
 .admin-login .error {color: var(--danger); margin-bottom: 12px; text-align: center; font-size: 14px;}
+
+/* Confirmação modal */
+.confirm-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:500}
+.confirm-box{width:94%;max-width:420px;background:var(--card);border-radius:12px;padding:16px;border:1px solid #24283a}
+.confirm-box p{margin:0;color:var(--text)}
+.confirm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.confirm-actions .btn{min-width:90px}
 </style>
 </head>
 <body>
@@ -189,8 +210,10 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
     <input id="prodPrice" placeholder="Preço" type="number" step="0.01" />
     <select id="prodCategory"><option value="">Selecione a categoria</option></select>
     <input type="file" id="prodImage" accept="image/*" />
-    <button class="btn brand" id="btnAddProd">Salvar Produto</button>
-    <button class="btn" id="btnCancelEdit" style="display:none;background:#6b7280;color:#fff;margin-top:6px">Cancelar Edição</button>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn brand" id="btnAddProd">Salvar Produto</button>
+      <button class="btn" id="btnCancelEdit" style="display:none;background:#6b7280;color:#fff">Cancelar Edição</button>
+    </div>
   </div>
 
   <!-- Tabela Produtos -->
@@ -199,6 +222,17 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
     <table class="table" id="prodTable"></table>
   </div>
 </main>
+
+<!-- Confirmação modal -->
+<div class="confirm-overlay" id="confirmDialog">
+  <div class="confirm-box">
+    <p id="confirmMsg">Confirmar ação?</p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirmCancel">Cancelar</button>
+      <button class="btn brand" id="confirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // Dados iniciais
@@ -296,92 +330,175 @@ document.getElementById('btnLogin').addEventListener('click',()=>{
 });
 document.getElementById('btnLogout').addEventListener('click',()=>{document.getElementById('adminLogin').style.display='block'; document.getElementById('admin').style.display='none';});
 
+// ---------- Modal de confirmação (reutilizável) ----------
+const confirmDialog = document.getElementById('confirmDialog');
+const confirmMsg = document.getElementById('confirmMsg');
+const confirmOk = document.getElementById('confirmOk');
+const confirmCancel = document.getElementById('confirmCancel');
+
+function showConfirm(message){
+  return new Promise(resolve=>{
+    confirmMsg.textContent = message;
+    confirmDialog.style.display = 'flex';
+    function onOk(){
+      cleanup();
+      resolve(true);
+    }
+    function onCancel(){
+      cleanup();
+      resolve(false);
+    }
+    function cleanup(){
+      confirmOk.removeEventListener('click', onOk);
+      confirmCancel.removeEventListener('click', onCancel);
+      confirmDialog.style.display = 'none';
+    }
+    confirmOk.addEventListener('click', onOk);
+    confirmCancel.addEventListener('click', onCancel);
+  });
+}
+// -------------------------------------------------------
+
 // Admin categorias
+function updateProdCategoryOptions(){
+  const sel=document.getElementById('prodCategory');
+  sel.innerHTML = '<option value="">Selecione a categoria</option>' + categorias.map(c=>`<option>${c.nome}</option>`).join('');
+}
+
 function renderAdminCats(){
   const el=document.getElementById('categoryList');
   el.innerHTML = categorias.map((c,i)=>`
     <div class="cat-item">
       <span>${c.nome}</span>
-      <div style="display:flex;gap:4px">
-        <button class="btn" onclick="moveCatUp(${i})" style="background:#3b82f6;color:#fff;border-radius:8px;">↑</button>
-        <button class="btn" onclick="moveCatDown(${i})" style="background:#3b82f6;color:#fff;border-radius:8px;">↓</button>
-        <button class="btn" onclick="toggleCat(${i})" style="background:${c.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px;">${c.ativo?'On':'Off'}</button>
-        <button class="btn" onclick="delCat(${i})" style="background:#ef4444;color:#fff;border-radius:8px;">Excluir</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="toggleCat(${i})" style="background:${c.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px">${c.ativo?'On':'Off'}</button>
+        <button class="btn" style="background:#ef4444;color:#fff;border-radius:8px" onclick="delCat(${i})">Remover</button>
       </div>
     </div>
   `).join('');
+  updateProdCategoryOptions();
 }
-function moveCatUp(i){if(i>0){[categorias[i],categorias[i-1]]=[categorias[i-1],categorias[i]];renderAdminCats();renderCats();renderProdCats()}}
-function moveCatDown(i){if(i<categorias.length-1){[categorias[i],categorias[i+1]]=[categorias[i+1],categorias[i]];renderAdminCats();renderCats();renderProdCats()}}
 function toggleCat(i){categorias[i].ativo=!categorias[i].ativo;renderAdminCats();renderCats()}
-function delCat(i){categorias.splice(i,1);renderAdminCats();renderCats();renderProdCats()}
-document.getElementById('btnAddCat').addEventListener('click',()=>{const n=document.getElementById('newCategory').value;if(n){categorias.push({nome:n,ativo:true});renderAdminCats();renderCats();renderProdCats();document.getElementById('newCategory').value=''}});
+async function delCat(i){
+  const nome = categorias[i].nome;
+  const ok = await showConfirm(`Deseja remover a categoria "${nome}"? Produtos nessa categoria ficarão sem categoria.`);
+  if(!ok) return;
+  // Ajusta produtos que pertençam à categoria removida (deixa categoria vazia)
+  produtos.forEach(p=>{ if(p.categoria === nome) p.categoria = ''; });
+  categorias.splice(i,1);
+  renderAdminCats();renderCats(); renderAdminProds(); renderProdutos();
+}
+document.getElementById('btnAddCat').addEventListener('click',()=>{
+  const v=document.getElementById('newCategory').value.trim(); if(!v) return;
+  categorias.push({nome:v,ativo:true}); document.getElementById('newCategory').value='';
+  renderAdminCats();renderCats();
+});
 
 // Admin produtos
-function renderProdCats(){const sel=document.getElementById('prodCategory');sel.innerHTML='<option value="">Selecione a categoria</option>'+categorias.map(c=>`<option>${c.nome}</option>`).join('');}
-function renderProdTable(){
+function renderAdminProds(){
   const el=document.getElementById('prodTable');
-  el.innerHTML='<tr><th>Nome</th><th>Preço</th><th>Categoria</th><th>Status</th><th>Ações</th></tr>'+
-    produtos.map((p,i)=>`
+  el.innerHTML='<tr><th>Nome</th><th>Preço</th><th>Categoria</th><th>Ações</th></tr>'+
+    produtos.map(p=>`
       <tr>
         <td>${p.nome}</td>
         <td>${fmt(p.preco)}</td>
-        <td>${p.categoria}</td>
-        <td><button class="btn" onclick="toggleProd(${i})" style="background:${p.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px;">${p.ativo?'On':'Off'}</button></td>
+        <td>${p.categoria || '<em>-</em>'}</td>
         <td>
-          <button class="btn" onclick="editProd(${i})" style="background:#3b82f6;color:#fff;border-radius:8px;">Editar</button>
-          <button class="btn" onclick="delProd(${i})" style="background:#ef4444;color:#fff;border-radius:8px;">Remover</button>
+          <div class="action-btns">
+            <button class="btn" onclick="toggleProd(${p.id})" style="background:${p.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px">${p.ativo?'On':'Off'}</button>
+            <button class="btn brand" onclick="editProd(${p.id})">Editar</button>
+            <button class="btn" style="background:#ef4444;color:#fff;border-radius:8px" onclick="delProd(${p.id})">Remover</button>
+          </div>
         </td>
       </tr>
     `).join('');
 }
-function toggleProd(i){produtos[i].ativo=!produtos[i].ativo;renderProdTable();renderProdutos();}
-function delProd(i){produtos.splice(i,1);renderProdTable();renderProdutos();}
-function editProd(i){
-  const p=produtos[i];
+
+function toggleProd(id){let p=produtos.find(x=>x.id===id); if(!p) return; p.ativo=!p.ativo; renderAdminProds(); renderProdutos();}
+
+async function delProd(id){
+  const p = produtos.find(x=>x.id===id);
+  if(!p) return;
+  const ok = await showConfirm(`Deseja remover o produto "${p.nome}"? Esta ação é irreversível.`);
+  if(!ok) return;
+  produtos = produtos.filter(x=>x.id!==id);
+  renderAdminProds(); renderProdutos();
+}
+
+function editProd(id){
+  const p=produtos.find(x=>x.id===id);
+  if(!p) return;
   document.getElementById('prodName').value=p.nome;
   document.getElementById('prodDesc').value=p.desc;
   document.getElementById('prodPrice').value=p.preco;
   document.getElementById('prodCategory').value=p.categoria;
+  // note: não podemos preencher um input file por script — se quiser ver a imagem atual, podemos mostrar um preview.
   editProdId=p.id;
   document.getElementById('btnAddProd').textContent='Salvar Alterações';
-  document.getElementById('btnCancelEdit').style.display='block';
+  document.getElementById('btnCancelEdit').style.display='inline-block';
 }
-document.getElementById('btnCancelEdit').addEventListener('click',()=>{editProdId=null;document.getElementById('btnAddProd').textContent='Salvar Produto';document.getElementById('btnCancelEdit').style.display='none';document.getElementById('prodName').value='';document.getElementById('prodDesc').value='';document.getElementById('prodPrice').value='';document.getElementById('prodCategory').value='';document.getElementById('prodImage').value='';});
+
+// Cancelar edição
+document.getElementById('btnCancelEdit').addEventListener('click',()=>{
+  clearProdForm();
+});
+
+// Função que limpa o form
+function clearProdForm(){
+  editProdId=null;
+  document.getElementById('prodName').value='';
+  document.getElementById('prodDesc').value='';
+  document.getElementById('prodPrice').value='';
+  document.getElementById('prodCategory').value='';
+  document.getElementById('prodImage').value='';
+  document.getElementById('btnAddProd').textContent='Salvar Produto';
+  document.getElementById('btnCancelEdit').style.display='none';
+}
+
+// Salvar produto (com suporte a imagem)
+function saveProduct(nome, desc, preco, cat, imgData){
+  if(editProdId){
+    let p = produtos.find(x=>x.id===editProdId);
+    if(!p) return;
+    p.nome = nome;
+    p.desc = desc;
+    p.preco = preco;
+    p.categoria = cat;
+    if(imgData) p.img = imgData; // só substitui se enviou nova imagem
+  }else{
+    const id = Date.now();
+    produtos.push({id, nome, desc, preco, categoria: cat, img: imgData || '', ativo:true});
+  }
+  clearProdForm();
+  renderAdminProds(); renderProdutos(); renderCats(); updateProdCategoryOptions();
+}
+
+// Handler do botão salvar produto (lê o arquivo se existir)
 document.getElementById('btnAddProd').addEventListener('click',()=>{
-  const nome=document.getElementById('prodName').value;
-  const desc=document.getElementById('prodDesc').value;
+  const nome=document.getElementById('prodName').value.trim();
+  const desc=document.getElementById('prodDesc').value.trim();
   const preco=parseFloat(document.getElementById('prodPrice').value);
   const cat=document.getElementById('prodCategory').value;
-  const file=document.getElementById('prodImage').files[0];
+  if(!nome || !desc || !preco || !cat){ alert('Preencha todos os campos obrigatórios (Nome, Descrição, Preço e Categoria).'); return; }
 
-  if(!nome||!preco||!cat){alert('Preencha os campos obrigatórios');return;}
-
+  const file = document.getElementById('prodImage').files[0];
   if(file){
-    const reader=new FileReader();
-    reader.onload=function(e){
-      saveProduct(nome,desc,preco,cat,e.target.result);
+    const reader = new FileReader();
+    reader.onload = function(e){
+      saveProduct(nome, desc, preco, cat, e.target.result);
+      document.getElementById('prodImage').value = '';
     };
     reader.readAsDataURL(file);
   }else{
-    saveProduct(nome,desc,preco,cat,null);
+    // Sem arquivo — salva mantendo a imagem atual (se estiver editando) ou sem imagem
+    saveProduct(nome, desc, preco, cat, null);
   }
 });
-function saveProduct(nome,desc,preco,cat,img){
-  if(editProdId){
-    let p=produtos.find(x=>x.id===editProdId);
-    p.nome=nome;p.desc=desc;p.preco=preco;p.categoria=cat;if(img)p.img=img;
-  }else{
-    const id=Math.max(0,...produtos.map(p=>p.id))+1;
-    produtos.push({id,nome,desc,preco,categoria:cat,img:img||'',ativo:true});
-  }
-  renderProdTable();renderProdutos();renderCats();renderProdCats();
-  document.getElementById('prodName').value='';document.getElementById('prodDesc').value='';document.getElementById('prodPrice').value='';document.getElementById('prodCategory').value='';document.getElementById('prodImage').value='';
-  editProdId=null;document.getElementById('btnAddProd').textContent='Salvar Produto';document.getElementById('btnCancelEdit').style.display='none';
-}
+
+// Inicializa admin
+function renderAdmin(){ renderAdminCats(); renderAdminProds(); updateProdCategoryOptions(); }
 
 // Init
-function renderAdmin(){renderAdminCats();renderProdCats();renderProdTable();}
 renderProdutos();
 </script>
 
