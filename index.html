@@ -33,16 +33,7 @@ button{cursor:pointer;border:none}
 .product{display:flex;flex-direction:column;padding:10px;background:var(--card);border:1px solid #24273a;border-radius:14px}
 .p-body{flex:1;margin-bottom:6px}
 .p-title{font-weight:600;margin-bottom:4px;font-size:14px}
-/* descrição aumentada */
-.p-desc{
-  color:#aab2c6;
-  font-size:12px;
-  margin-bottom:6px;
-  display:-webkit-box;
-  -webkit-line-clamp:3;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
+.p-desc{color:#aab2c6;font-size:12px;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .p-foot{display:flex;justify-content:space-between;align-items:center}
 .price{font-weight:700;font-size:13px}
 .thumb{width:100%;height:80px;background:#0b0d13;background-size:cover;background-position:center;border-radius:8px;margin-top:6px}
@@ -50,17 +41,8 @@ button{cursor:pointer;border:none}
 .btn.brand{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#0a1220}
 
 /* Botões de ação no admin */
-.action-btns {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.action-btns .btn {
-  flex: 1 1 90px; /* largura mínima */
-  text-align: center;
-  min-width: 80px;
-}
+.action-btns {display: flex;gap: 8px;flex-wrap: wrap;align-items: center;}
+.action-btns .btn {flex: 1 1 90px;text-align: center;}
 
 /* Carrinho fixo */
 .cartbar{position:fixed;bottom:12px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;background:#171a24;border:1px solid #2a3148;border-radius:14px;padding:10px;z-index:200}
@@ -84,18 +66,7 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
 .table th,.table td{padding:8px;border-bottom:1px solid #2a2d42;text-align:left}
 
 /* categorias admin listadas */
-.cat-item {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:6px;
-  border:1px solid #2a2d42;
-  border-radius:8px;
-  padding:6px 10px;
-  margin-bottom:6px;
-  background:#1c1f2c;
-  color:var(--text);
-}
+.cat-item {display:flex;justify-content:space-between;align-items:center;gap:6px;border:1px solid #2a2d42;border-radius:8px;padding:6px 10px;margin-bottom:6px;background:#1c1f2c;color:var(--text);}
 
 .admin-login {display: none; padding: 20px; max-width: 320px; margin: 20px auto; background: var(--card); border-radius: 12px; border: 1px solid #24283a;}
 .admin-login h3 {margin-bottom: 16px; text-align: center;}
@@ -133,7 +104,7 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
   <div>🛒 <strong id="cartCount">0</strong> itens</div>
   <div style="display:flex;align-items:center;gap:8px">
     <strong id="cartTotalBar">R$ 0,00</strong>
-    <button class="btn brand" id="openCheckout">Finalizar</button>
+    <button class="btn brand" id="openCheckout">Ver Carrinho</button>
   </div>
 </div>
 
@@ -248,11 +219,16 @@ let categorias=[{nome:'Lanches',ativo:true},{nome:'Bebidas',ativo:true},{nome:'A
 let filtro='Lanches';
 let cart=[];
 let editProdId=null;
+let confirmCallback=null;
 
 const elList=document.getElementById('produtos');
 const cartbar=document.getElementById('cartbar');
 const cartCount=document.getElementById('cartCount');
 const cartTotalBar=document.getElementById('cartTotalBar');
+const confirmDialog=document.getElementById('confirmDialog');
+const confirmMsg=document.getElementById('confirmMsg');
+const confirmOk=document.getElementById('confirmOk');
+const confirmCancel=document.getElementById('confirmCancel');
 
 function fmt(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
 
@@ -279,6 +255,11 @@ function add(id){
   if(it) it.qtd++; else {let p=produtos.find(x=>x.id===id); cart.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1})}
   renderCart();
 }
+function removeItem(id){
+  cart = cart.filter(i=>i.id!==id);
+  renderCart();
+  renderResumo();
+}
 function renderCart(){
   let total=cart.reduce((s,i)=>s+i.preco*i.qtd,0);
   cartCount.textContent=cart.reduce((s,i)=>s+i.qtd,0);
@@ -286,11 +267,39 @@ function renderCart(){
   cartbar.style.display=cart.length?'flex':'none';
 }
 
+// Render resumo carrinho com remover
+function renderResumo(){
+  const resumo = document.getElementById('resumo');
+  resumo.innerHTML = cart.map(i=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div>${i.nome} - ${fmt(i.preco*i.qtd)}</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="btn" onclick="decreaseQty(${i.id})">-</button>
+        <span>${i.qtd}</span>
+        <button class="btn" onclick="increaseQty(${i.id})">+</button>
+        <button class="btn" style="background:#ef4444;color:#fff" onclick="confirmRemove(${i.id})">Remover</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('checkoutTotal').textContent = fmt(cart.reduce((s,i)=>s+i.preco*i.qtd,0));
+}
+
+// Confirmar remoção
+function confirmRemove(id){
+  confirmMsg.textContent = 'Deseja remover este item do carrinho?';
+  confirmDialog.style.display='flex';
+  confirmCallback=()=>{removeItem(id); confirmDialog.style.display='none'; confirmCallback=null;};
+}
+confirmOk.addEventListener('click',()=>{ if(confirmCallback) confirmCallback(); });
+confirmCancel.addEventListener('click',()=>{ confirmDialog.style.display='none'; confirmCallback=null; });
+
+// Funções quantidade
+function increaseQty(id){ let item = cart.find(i => i.id === id); if(item) item.qtd++; renderCart(); renderResumo();}
+function decreaseQty(id){ let item = cart.find(i => i.id === id); if(item){item.qtd--; if(item.qtd <= 0) cart = cart.filter(i => i.id !== id);} renderCart(); renderResumo();}
+
 // Categorias cliente
 const catEl=document.getElementById('cats');
-function renderCats(){
-  catEl.innerHTML=categorias.filter(c=>c.ativo).map(c=>`<div class='cat ${c.nome===filtro?'active':''}' onclick="filtro='${c.nome}';renderProdutos();renderCats()">${c.nome}</div>`).join('');
-}
+function renderCats(){catEl.innerHTML=categorias.filter(c=>c.ativo).map(c=>`<div class='cat ${c.nome===filtro?'active':''}' onclick="filtro='${c.nome}';renderProdutos();renderCats()">${c.nome}</div>`).join('');}
 renderCats();
 
 // Tabs
@@ -308,199 +317,109 @@ document.querySelectorAll('.tab').forEach(tab=>{
 document.getElementById('openCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='block'; renderResumo();});
 document.getElementById('closeCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='none';});
 document.querySelectorAll('input[name="tipo"]').forEach(r=>{r.addEventListener('change',()=>{document.getElementById('enderecoBox').style.display=r.value==='entrega'?'block':'none'})});
-function renderResumo(){
-  const resumo=document.getElementById('resumo');
-  resumo.innerHTML=cart.map(i=>`<div>${i.qtd}x ${i.nome} - ${fmt(i.preco*i.qtd)}</div>`).join('');
-  document.getElementById('checkoutTotal').textContent=fmt(cart.reduce((s,i)=>s+i.preco*i.qtd,0));
-}
 
-// Admin login
-const USER='admin', PASS='123';
-document.getElementById('btnLogin').addEventListener('click',()=>{
-  const u=document.getElementById('username').value;
-  const p=document.getElementById('password').value;
-  if(u===USER && p===PASS){
-    document.getElementById('adminLogin').style.display='none';
-    document.getElementById('admin').style.display='block';
-    renderAdmin();
-  }else{
-    document.getElementById('loginError').style.display='block';
-    document.getElementById('loginError').textContent='Usuário ou senha incorretos';
-  }
-});
-document.getElementById('btnLogout').addEventListener('click',()=>{document.getElementById('adminLogin').style.display='block'; document.getElementById('admin').style.display='none';});
+// Login admin
+document.addEventListener('DOMContentLoaded', () => {
+  const adminUser='admin';
+  const adminPass='1234';
+  const loginErr=document.getElementById('loginError');
 
-// ---------- Modal de confirmação (reutilizável) ----------
-const confirmDialog = document.getElementById('confirmDialog');
-const confirmMsg = document.getElementById('confirmMsg');
-const confirmOk = document.getElementById('confirmOk');
-const confirmCancel = document.getElementById('confirmCancel');
+  document.getElementById('btnLogin').addEventListener('click',()=>{
+    const u=document.getElementById('username').value.trim();
+    const p=document.getElementById('password').value.trim();
 
-function showConfirm(message){
-  return new Promise(resolve=>{
-    confirmMsg.textContent = message;
-    confirmDialog.style.display = 'flex';
-    function onOk(){
-      cleanup();
-      resolve(true);
+    if(u===adminUser && p===adminPass){
+      document.getElementById('adminLogin').style.display='none';
+      document.getElementById('admin').style.display='block';
+      loginErr.style.display='none';
+      renderAdminCats();
+      renderAdminProds();
+    } else {
+      loginErr.style.display='block';
+      loginErr.textContent='Usuário ou senha incorretos';
     }
-    function onCancel(){
-      cleanup();
-      resolve(false);
-    }
-    function cleanup(){
-      confirmOk.removeEventListener('click', onOk);
-      confirmCancel.removeEventListener('click', onCancel);
-      confirmDialog.style.display = 'none';
-    }
-    confirmOk.addEventListener('click', onOk);
-    confirmCancel.addEventListener('click', onCancel);
   });
-}
-// -------------------------------------------------------
+
+  document.getElementById('btnLogout').addEventListener('click',()=>{
+    document.getElementById('admin').style.display='none';
+    document.getElementById('adminLogin').style.display='block';
+    document.getElementById('username').value='';
+    document.getElementById('password').value='';
+  });
+});
 
 // Admin categorias
-function updateProdCategoryOptions(){
-  const sel=document.getElementById('prodCategory');
-  sel.innerHTML = '<option value="">Selecione a categoria</option>' + categorias.map(c=>`<option>${c.nome}</option>`).join('');
-}
-
 function renderAdminCats(){
-  const el=document.getElementById('categoryList');
-  el.innerHTML = categorias.map((c,i)=>`
+  const list=document.getElementById('categoryList');
+  list.innerHTML=categorias.map(c=>`
     <div class="cat-item">
       <span>${c.nome}</span>
-      <div style="display:flex;gap:8px">
-        <button class="btn" onclick="toggleCat(${i})" style="background:${c.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px">${c.ativo?'On':'Off'}</button>
-        <button class="btn" style="background:#ef4444;color:#fff;border-radius:8px" onclick="delCat(${i})">Remover</button>
-      </div>
+      <button class="btn" onclick="removeCat('${c.nome}')">Remover</button>
     </div>
   `).join('');
-  updateProdCategoryOptions();
-}
-function toggleCat(i){categorias[i].ativo=!categorias[i].ativo;renderAdminCats();renderCats()}
-async function delCat(i){
-  const nome = categorias[i].nome;
-  const ok = await showConfirm(`Deseja remover a categoria "${nome}"? Produtos nessa categoria ficarão sem categoria.`);
-  if(!ok) return;
-  // Ajusta produtos que pertençam à categoria removida (deixa categoria vazia)
-  produtos.forEach(p=>{ if(p.categoria === nome) p.categoria = ''; });
-  categorias.splice(i,1);
-  renderAdminCats();renderCats(); renderAdminProds(); renderProdutos();
+  const sel=document.getElementById('prodCategory');
+  sel.innerHTML='<option value="">Selecione a categoria</option>'+categorias.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
 }
 document.getElementById('btnAddCat').addEventListener('click',()=>{
-  const v=document.getElementById('newCategory').value.trim(); if(!v) return;
-  categorias.push({nome:v,ativo:true}); document.getElementById('newCategory').value='';
-  renderAdminCats();renderCats();
+  const val=document.getElementById('newCategory').value.trim();
+  if(val && !categorias.find(c=>c.nome===val)){categorias.push({nome:val,ativo:true}); renderAdminCats(); document.getElementById('newCategory').value=''; renderCats();}
 });
+function removeCat(nome){categorias=categorias.filter(c=>c.nome!==nome); produtos=produtos.filter(p=>p.categoria!==nome); renderAdminCats(); renderProdutos(); renderCats();}
 
 // Admin produtos
 function renderAdminProds(){
-  const el=document.getElementById('prodTable');
-  el.innerHTML='<tr><th>Nome</th><th>Preço</th><th>Categoria</th><th>Ações</th></tr>'+
-    produtos.map(p=>`
-      <tr>
-        <td>${p.nome}</td>
-        <td>${fmt(p.preco)}</td>
-        <td>${p.categoria || '<em>-</em>'}</td>
-        <td>
-          <div class="action-btns">
-            <button class="btn" onclick="toggleProd(${p.id})" style="background:${p.ativo?'#22c55e':'#ef4444'};color:#fff;border-radius:8px">${p.ativo?'On':'Off'}</button>
-            <button class="btn brand" onclick="editProd(${p.id})">Editar</button>
-            <button class="btn" style="background:#ef4444;color:#fff;border-radius:8px" onclick="delProd(${p.id})">Remover</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+  const table=document.getElementById('prodTable');
+  table.innerHTML='<tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Ações</th></tr>'+
+    produtos.map(p=>`<tr>
+      <td>${p.nome}</td>
+      <td>${p.categoria}</td>
+      <td>${fmt(p.preco)}</td>
+      <td class="action-btns">
+        <button class="btn" onclick="editProd(${p.id})">Editar</button>
+        <button class="btn" onclick="removeProd(${p.id})" style="background:#ef4444;color:#fff">Remover</button>
+      </td>
+    </tr>`).join('');
 }
 
-function toggleProd(id){let p=produtos.find(x=>x.id===id); if(!p) return; p.ativo=!p.ativo; renderAdminProds(); renderProdutos();}
-
-async function delProd(id){
-  const p = produtos.find(x=>x.id===id);
-  if(!p) return;
-  const ok = await showConfirm(`Deseja remover o produto "${p.nome}"? Esta ação é irreversível.`);
-  if(!ok) return;
-  produtos = produtos.filter(x=>x.id!==id);
-  renderAdminProds(); renderProdutos();
-}
+document.getElementById('btnAddProd').addEventListener('click',()=>{
+  const n=document.getElementById('prodName').value;
+  const d=document.getElementById('prodDesc').value;
+  const p=parseFloat(document.getElementById('prodPrice').value);
+  const c=document.getElementById('prodCategory').value;
+  const img=''; 
+  if(!n || !d || !p || !c) return alert('Preencha todos os campos');
+  if(editProdId){
+    let prod=produtos.find(x=>x.id===editProdId);
+    prod.nome=n; prod.desc=d; prod.preco=p; prod.categoria=c; prod.img=img;
+    editProdId=null;
+    document.getElementById('btnCancelEdit').style.display='none';
+  } else {
+    produtos.push({id:Date.now(),nome:n,desc:d,preco:p,categoria:c,img:img,ativo:true});
+  }
+  renderAdminProds();
+  renderProdutos();
+  document.getElementById('prodName').value=''; document.getElementById('prodDesc').value=''; document.getElementById('prodPrice').value=''; document.getElementById('prodCategory').value='';
+});
+document.getElementById('btnCancelEdit').addEventListener('click',()=>{
+  editProdId=null;
+  document.getElementById('btnCancelEdit').style.display='none';
+  document.getElementById('prodName').value=''; document.getElementById('prodDesc').value=''; document.getElementById('prodPrice').value=''; document.getElementById('prodCategory').value='';
+});
 
 function editProd(id){
-  const p=produtos.find(x=>x.id===id);
-  if(!p) return;
+  let p=produtos.find(x=>x.id===id);
   document.getElementById('prodName').value=p.nome;
   document.getElementById('prodDesc').value=p.desc;
   document.getElementById('prodPrice').value=p.preco;
   document.getElementById('prodCategory').value=p.categoria;
-  // note: não podemos preencher um input file por script — se quiser ver a imagem atual, podemos mostrar um preview.
-  editProdId=p.id;
-  document.getElementById('btnAddProd').textContent='Salvar Alterações';
+  editProdId=id;
   document.getElementById('btnCancelEdit').style.display='inline-block';
 }
+function removeProd(id){if(confirm('Deseja remover este produto?')){produtos=produtos.filter(p=>p.id!==id); renderAdminProds(); renderProdutos();}}
 
-// Cancelar edição
-document.getElementById('btnCancelEdit').addEventListener('click',()=>{
-  clearProdForm();
-});
-
-// Função que limpa o form
-function clearProdForm(){
-  editProdId=null;
-  document.getElementById('prodName').value='';
-  document.getElementById('prodDesc').value='';
-  document.getElementById('prodPrice').value='';
-  document.getElementById('prodCategory').value='';
-  document.getElementById('prodImage').value='';
-  document.getElementById('btnAddProd').textContent='Salvar Produto';
-  document.getElementById('btnCancelEdit').style.display='none';
-}
-
-// Salvar produto (com suporte a imagem)
-function saveProduct(nome, desc, preco, cat, imgData){
-  if(editProdId){
-    let p = produtos.find(x=>x.id===editProdId);
-    if(!p) return;
-    p.nome = nome;
-    p.desc = desc;
-    p.preco = preco;
-    p.categoria = cat;
-    if(imgData) p.img = imgData; // só substitui se enviou nova imagem
-  }else{
-    const id = Date.now();
-    produtos.push({id, nome, desc, preco, categoria: cat, img: imgData || '', ativo:true});
-  }
-  clearProdForm();
-  renderAdminProds(); renderProdutos(); renderCats(); updateProdCategoryOptions();
-}
-
-// Handler do botão salvar produto (lê o arquivo se existir)
-document.getElementById('btnAddProd').addEventListener('click',()=>{
-  const nome=document.getElementById('prodName').value.trim();
-  const desc=document.getElementById('prodDesc').value.trim();
-  const preco=parseFloat(document.getElementById('prodPrice').value);
-  const cat=document.getElementById('prodCategory').value;
-  if(!nome || !desc || !preco || !cat){ alert('Preencha todos os campos obrigatórios (Nome, Descrição, Preço e Categoria).'); return; }
-
-  const file = document.getElementById('prodImage').files[0];
-  if(file){
-    const reader = new FileReader();
-    reader.onload = function(e){
-      saveProduct(nome, desc, preco, cat, e.target.result);
-      document.getElementById('prodImage').value = '';
-    };
-    reader.readAsDataURL(file);
-  }else{
-    // Sem arquivo — salva mantendo a imagem atual (se estiver editando) ou sem imagem
-    saveProduct(nome, desc, preco, cat, null);
-  }
-});
-
-// Inicializa admin
-function renderAdmin(){ renderAdminCats(); renderAdminProds(); updateProdCategoryOptions(); }
-
-// Init
+// Inicial
 renderProdutos();
+renderCart();
 </script>
-
 </body>
 </html>
