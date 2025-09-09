@@ -491,6 +491,45 @@ function removeProd(id){
 // Inicial
 renderProdutos();
 renderCart();
+document.getElementById('btnEnviar').addEventListener('click', () => {
+  const clientName = document.getElementById('clientName').value.trim();
+  if (!clientName) return alert('Por favor, informe seu nome.');
+
+  const tipoEntrega = document.querySelector('input[name="tipo"]:checked').value;
+  let endereco = '';
+  if (tipoEntrega === 'entrega') {
+    const inputs = document.querySelectorAll('#enderecoBox input');
+    endereco = `Rua: ${inputs[0].value}, Nº: ${inputs[1].value}, Bairro: ${inputs[2].value}`;
+    if (!inputs[0].value || !inputs[1].value || !inputs[2].value) {
+      return alert('Por favor, preencha todos os campos de endereço.');
+    }
+  }
+
+  const formaPg = document.querySelector('input[name="pg"]:checked').value;
+
+  if (cart.length === 0) return alert('Seu carrinho está vazio.');
+
+  // Montar mensagem do pedido
+  let mensagem = `Olá, meu nome é ${clientName}.\n`;
+  mensagem += `Pedido para: ${tipoEntrega === 'entrega' ? 'Entrega' : 'Retirada'}\n`;
+  if (endereco) mensagem += `Endereço: ${endereco}\n`;
+  mensagem += `Forma de pagamento: ${formaPg}\n\n`;
+  mensagem += `Pedido:\n`;
+  cart.forEach(item => {
+    mensagem += `- ${item.nome} x${item.qtd} = ${fmt(item.preco * item.qtd)}\n`;
+  });
+  mensagem += `\nTotal: ${fmt(cart.reduce((s,i)=>s+i.preco*i.qtd,0))}`;
+
+  // Número do WhatsApp da lanchonete (substitua pelo número real, no formato internacional, sem "+" ou espaços)
+  const whatsappNumber = '5535999027681';
+
+  // Link WhatsApp Web / App Mobile
+  const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensagem)}`;
+
+  // Abrir link
+  window.open(url, '_blank');
+});
+
 </script>
 </body>
 </html>
