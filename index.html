@@ -56,8 +56,9 @@ button{cursor:pointer;border:none}
 label{font-size:12px;color:#b9c2dd;margin-bottom:4px;display:block}
 input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #2b3050;background:#121522;color:#fff}
 input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline:none}
-.radio-row{display:flex;gap:10px;flex-wrap:wrap}
-.radio{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #2b3050;border-radius:8px;font-size:13px}
+.radio-row{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.radio{display:flex;align-items:center;gap:6px;padding:10px;border:1px solid #2b3050;border-radius:8px;font-size:14px;width:100%;}
+.radio input{width:auto;margin-right:8px;}
 
 /* Admin e login */
 .admin{display:none;padding:12px}
@@ -67,6 +68,7 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
 
 /* categorias admin listadas */
 .cat-item {display:flex;justify-content:space-between;align-items:center;gap:6px;border:1px solid #2a2d42;border-radius:8px;padding:6px 10px;margin-bottom:6px;background:#1c1f2c;color:var(--text);}
+.cat-item.dragging {opacity: 0.5; background: #2a2d42;}
 
 .admin-login {display: none; padding: 20px; max-width: 320px; margin: 20px auto; background: var(--card); border-radius: 12px; border: 1px solid #24283a;}
 .admin-login h3 {margin-bottom: 16px; text-align: center;}
@@ -80,6 +82,15 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
 .confirm-box p{margin:0;color:var(--text)}
 .confirm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 .confirm-actions .btn{min-width:90px}
+
+/* Ordenação de categorias */
+.sortable-ghost {opacity: 0.4;}
+.drag-handle {cursor: move; padding: 4px 8px; margin-right: 8px; background: #2a2d42; border-radius: 4px;}
+.order-info {font-size: 12px; color: var(--muted); margin-top: 8px;}
+
+/* Opções de pagamento adicionais */
+.payment-options {display: none; margin-top: 10px; padding-left: 20px;}
+.troco-field {display: none; margin-top: 10px;}
 </style>
 </head>
 <body>
@@ -119,35 +130,45 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
     </div>
 	
     <div class="row">
-  <label for="clientName">Nome do Cliente</label>
-  <input type="text" id="clientName" placeholder="Digite seu nome completo" />
-</div>
+      <label for="clientName">Nome do Cliente</label>
+      <input type="text" id="clientName" placeholder="Digite seu nome completo" />
+    </div>
 
-      <div>
-        <h4>Entrega ou retirada</h4>
-        <div class="radio-row">
-          <label class="radio"><input type="radio" name="tipo" value="retirada" checked> Retirada</label>
-          <label class="radio"><input type="radio" name="tipo" value="entrega"> Entrega</label>
-        </div>
-        <div id="enderecoBox" style="display:none;margin-top:10px">
-          <label>Endereço</label><input placeholder="Rua" />
-          <label>Número da casa</label><input placeholder="Ex: 155" />
-          <label>Bairro</label><input placeholder="Ex: Jardim Novo, Renovação, Vila Nova" />
-        </div>
+    <div>
+      <h4>Entrega ou retirada</h4>
+      <div class="radio-row">
+        <label class="radio"><input type="radio" name="tipo" value="retirada" checked> Retirada</label>
+        <label class="radio"><input type="radio" name="tipo" value="entrega"> Entrega</label>
       </div>
-      <div>
-        <h4>Pagamento</h4>
-        <div class="radio-row">
-          <label class="radio"><input type="radio" name="pg" value="pix" checked> Pix</label>
-          <label class="radio"><input type="radio" name="pg" value="cartao"> Cartão</label>
-          <label class="radio"><input type="radio" name="pg" value="dinheiro"> Dinheiro</label>
-        </div>
-        <div style="margin-top:12px;display:flex;justify-content:space-between">
-          <span>Total</span><strong id="checkoutTotal">R$ 0,00</strong>
-        </div>
-        <button class="btn brand" id="btnEnviar" style="margin-top:12px">Enviar pedido</button>
+      <div id="enderecoBox" style="display:none;margin-top:10px">
+        <label>Endereço</label><input placeholder="Rua" id="enderecoRua" />
+        <label>Número da casa</label><input placeholder="Ex: 155" id="enderecoNumero" />
+        <label>Bairro</label><input placeholder="Ex: Jardim Novo, Renovação, Vila Nova" id="enderecoBairro" />
       </div>
     </div>
+    
+    <div>
+      <h4>Pagamento</h4>
+      <div class="radio-row">
+        <label class="radio"><input type="radio" name="pg" value="pix" checked> Pix</label>
+        <label class="radio"><input type="radio" name="pg" value="cartao"> Cartão</label>
+        <div id="cartaoOptions" class="payment-options">
+          <label class="radio"><input type="radio" name="tipo-cartao" value="credito"> Crédito</label>
+          <label class="radio"><input type="radio" name="tipo-cartao" value="debito"> Débito</label>
+        </div>
+        <label class="radio"><input type="radio" name="pg" value="dinheiro"> Dinheiro</label>
+        <div id="trocoField" class="troco-field">
+          <label for="valorTroco">Valor para troco (opcional)</label>
+          <input type="number" id="valorTroco" placeholder="R$ 0,00" step="0.01" />
+        </div>
+      </div>
+      
+      <div style="margin-top:12px;display:flex;justify-content:space-between">
+        <span>Total</span><strong id="checkoutTotal">R$ 0,00</strong>
+      </div>
+      <button class="btn brand" id="btnEnviar" style="margin-top:12px">Enviar pedido</button>
+    </div>
+    
     <div style="margin-top:16px">
       <h4>Resumo</h4>
       <div id="resumo"></div>
@@ -177,6 +198,7 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
       <input id="newCategory" placeholder="Nome da categoria" />
       <button class="btn brand" id="btnAddCat">Adicionar</button>
     </div>
+    <div class="order-info">Arraste as categorias para reordenar (a primeira será a padrão)</div>
     <div id="categoryList"></div>
   </div>
 
@@ -213,7 +235,7 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
   </div>
 </div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 // Dados iniciais
 let produtos = [];
@@ -249,20 +271,39 @@ function carregarDados() {
   
   if (categoriasSalvas) {
     categorias = JSON.parse(categoriasSalvas);
+    
+    // Garantir que todas as categorias tenham a propriedade ordem
+    let precisaSalvar = false;
+    categorias.forEach((cat, index) => {
+      if (cat.ordem === undefined) {
+        cat.ordem = index;
+        precisaSalvar = true;
+      }
+    });
+    
+    // Ordenar categorias pela propriedade ordem
+    categorias.sort((a, b) => a.ordem - b.ordem);
+    
+    if (precisaSalvar) {
+      salvarCategorias();
+    }
   } else {
     // Dados iniciais padrão
     categorias = [
-      {nome:'Lanches',ativo:true},
-      {nome:'Bebidas',ativo:true},
-      {nome:'Acompanhamentos',ativo:true},
-      {nome:'Sobremesas',ativo:true}
+      {nome:'Lanches',ativo:true, ordem: 0},
+      {nome:'Bebidas',ativo:true, ordem: 1},
+      {nome:'Acompanhamentos',ativo:true, ordem: 2},
+      {nome:'Sobremesas',ativo:true, ordem: 3}
     ];
     salvarCategorias();
   }
   
   // Definir a primeira categoria como filtro padrão
   if (categorias.length > 0) {
-    filtro = categorias[0].nome;
+    const primeiraCategoriaAtiva = categorias.find(c => c.ativo);
+    if (primeiraCategoriaAtiva) {
+      filtro = primeiraCategoriaAtiva.nome;
+    }
   }
 }
 
@@ -402,7 +443,12 @@ function decreaseQty(id){
 // Categorias cliente
 const catEl = document.getElementById('cats');
 function renderCats(){
-  catEl.innerHTML = categorias.filter(c => c.ativo).map(c => `
+  // Filtrar apenas categorias ativas e ordenar pela propriedade ordem
+  const categoriasAtivas = categorias
+    .filter(c => c.ativo)
+    .sort((a, b) => a.ordem - b.ordem);
+  
+  catEl.innerHTML = categoriasAtivas.map(c => `
     <div class='cat ${c.nome === filtro ? 'active' : ''}' onclick="filtro='${c.nome}';renderProdutos();renderCats()">
       ${c.nome}
     </div>
@@ -435,9 +481,26 @@ document.getElementById('closeCheckout').addEventListener('click', () => {
   document.getElementById('checkout').style.display = 'none';
 });
 
+// Controle de exibição dos campos de endereço
 document.querySelectorAll('input[name="tipo"]').forEach(r => {
   r.addEventListener('change', () => {
     document.getElementById('enderecoBox').style.display = r.value === 'entrega' ? 'block' : 'none';
+  });
+});
+
+// Controle de exibição das opções de pagamento
+document.querySelectorAll('input[name="pg"]').forEach(r => {
+  r.addEventListener('change', () => {
+    // Esconder todos os campos extras primeiro
+    document.getElementById('cartaoOptions').style.display = 'none';
+    document.getElementById('trocoField').style.display = 'none';
+    
+    // Mostrar campos conforme a seleção
+    if (r.value === 'cartao') {
+      document.getElementById('cartaoOptions').style.display = 'block';
+    } else if (r.value === 'dinheiro') {
+      document.getElementById('trocoField').style.display = 'block';
+    }
   });
 });
 
@@ -451,8 +514,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderProdutos();
   renderCart();
   
-  const adminUser = 'lanche123';
-  const adminPass = 'avilareis';
+  const adminUser = 'admin';
+  const adminPass = '1234';
   const loginErr = document.getElementById('loginError');
 
   document.getElementById('btnLogin').addEventListener('click', () => {
@@ -465,6 +528,9 @@ document.addEventListener('DOMContentLoaded', () => {
       loginErr.style.display = 'none';
       renderAdminCats();
       renderAdminProds();
+      
+      // Inicializar a funcionalidade de arrastar e soltar
+      initSortableCategories();
     } else {
       loginErr.style.display = 'block';
       loginErr.textContent = 'Usuário ou senha incorretos';
@@ -478,6 +544,36 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('password').value = '';
   });
 });
+
+// Inicializar a funcionalidade de arrastar e soltar para categorias
+function initSortableCategories() {
+  const categoryList = document.getElementById('categoryList');
+  
+  if (categoryList) {
+    new Sortable(categoryList, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      handle: '.drag-handle',
+      onEnd: function(evt) {
+        // Atualizar a ordem das categorias
+        const items = categoryList.querySelectorAll('.cat-item');
+        items.forEach((item, index) => {
+          const categoryName = item.querySelector('span').textContent;
+          const category = categorias.find(c => c.nome === categoryName);
+          if (category) {
+            category.ordem = index;
+          }
+        });
+        
+        // Salvar a nova ordem
+        salvarCategorias();
+        
+        // Atualizar a exibição para o cliente
+        renderCats();
+      }
+    });
+  }
+}
 
 // Alterna ativo/inativo de produtos
 function toggleProd(id){
@@ -504,9 +600,16 @@ function toggleCat(nome){
 // Admin categorias
 function renderAdminCats(){
   const list = document.getElementById('categoryList');
-  list.innerHTML = categorias.map(c => `
+  
+  // Ordenar categorias pela propriedade ordem
+  const categoriasOrdenadas = [...categorias].sort((a, b) => a.ordem - b.ordem);
+  
+  list.innerHTML = categoriasOrdenadas.map(c => `
     <div class="cat-item">
-      <span>${c.nome}</span>
+      <div style="display:flex;align-items:center;">
+        <span class="drag-handle">≡</span>
+        <span>${c.nome}</span>
+      </div>
       <div style="display:flex;gap:4px">
         <button class="btn" style="background:${c.ativo ? '#fbbf24' : '#6b7280'}; color:#0a1220" onclick="toggleCat('${c.nome}')">
           ${c.ativo ? 'Ativo' : 'Inativo'}
@@ -524,7 +627,9 @@ function renderAdminCats(){
 document.getElementById('btnAddCat').addEventListener('click', () => {
   const val = document.getElementById('newCategory').value.trim();
   if(val && !categorias.find(c => c.nome === val)){
-    categorias.push({nome: val, ativo: true}); 
+    // Determinar a próxima ordem disponível
+    const maxOrdem = Math.max(...categorias.map(c => c.ordem), -1);
+    categorias.push({nome: val, ativo: true, ordem: maxOrdem + 1}); 
     salvarCategorias();
     renderAdminCats(); 
     document.getElementById('newCategory').value = ''; 
@@ -624,33 +729,56 @@ document.getElementById('btnEnviar').addEventListener('click', () => {
   const tipoEntrega = document.querySelector('input[name="tipo"]:checked').value;
   let endereco = '';
   if (tipoEntrega === 'entrega') {
-    const inputs = document.querySelectorAll('#enderecoBox input');
-    endereco = `Rua: ${inputs[0].value}, Nº: ${inputs[1].value}, Bairro: ${inputs[2].value}`;
-    if (!inputs[0].value || !inputs[1].value || !inputs[2].value) {
+    const rua = document.getElementById('enderecoRua').value.trim();
+    const numero = document.getElementById('enderecoNumero').value.trim();
+    const bairro = document.getElementById('enderecoBairro').value.trim();
+    
+    if (!rua || !numero || !bairro) {
       return alert('Por favor, preencha todos os campos de endereço.');
     }
+    
+    endereco = `Rua: ${rua}, Nº: ${numero}, Bairro: ${bairro}`;
   }
 
   const formaPg = document.querySelector('input[name="pg"]:checked').value;
+  let detalhesPagamento = formaPg;
+
+  // Adicionar detalhes específicos do pagamento
+  if (formaPg === 'cartao') {
+    const tipoCartao = document.querySelector('input[name="tipo-cartao"]:checked');
+    if (tipoCartao) {
+      detalhesPagamento += ` (${tipoCartao.value})`;
+    } else {
+      return alert('Por favor, selecione o tipo do cartão.');
+    }
+  } else if (formaPg === 'dinheiro') {
+    const valorTroco = document.getElementById('valorTroco').value;
+    if (valorTroco) {
+      detalhesPagamento += ` - Troco para R$ ${parseFloat(valorTroco).toFixed(2)}`;
+    }
+  }
 
   if (cart.length === 0) return alert('Seu carrinho está vazio.');
 
   // Montar mensagem do pedido
-  let mensagem = `Olá, meu nome é ${clientName}.\n`;
-  mensagem += `Pedido para: ${tipoEntrega === 'entrega' ? 'Entrega' : 'Retirada'}\n`;
-  if (endereco) mensagem += `Endereço: ${endereco}\n`;
-  mensagem += `Forma de pagamento: ${formaPg}\n\n`;
-  mensagem += `Pedido:\n`;
+  let mensagem = `*PedidoFácil - Novo Pedido*%0A%0A`;
+  mensagem += `*Cliente:* ${clientName}%0A`;
+  mensagem += `*Tipo:* ${tipoEntrega === 'entrega' ? 'Entrega' : 'Retirada'}%0A`;
+  if (endereco) mensagem += `*Endereço:* ${endereco}%0A`;
+  mensagem += `*Pagamento:* ${detalhesPagamento}%0A%0A`;
+  mensagem += `*Itens do pedido:*%0A`;
+  
   cart.forEach(item => {
-    mensagem += `- ${item.nome} x${item.qtd} = ${fmt(item.preco * item.qtd)}\n`;
+    mensagem += `➡️ ${item.nome} x${item.qtd} = ${fmt(item.preco * item.qtd)}%0A`;
   });
-  mensagem += `\nTotal: ${fmt(cart.reduce((s, i) => s + i.preco * i.qtd, 0))}`;
+  
+  mensagem += `%0A*Total: ${fmt(cart.reduce((s, i) => s + i.preco * i.qtd, 0))}*`;
 
-  // Número do WhatsApp da lanchonete (substitua pelo número real, no formato internacional, sem "+" ou espaços)
+  // Número do WhatsApp da lanchonete (substitua pelo número real)
   const whatsappNumber = '5535999027681';
 
   // Link WhatsApp Web / App Mobile
-  const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensagem)}`;
+  const url = `https://wa.me/${whatsappNumber}?text=${mensagem}`;
 
   // Abrir link
   window.open(url, '_blank');
@@ -659,6 +787,808 @@ document.getElementById('btnEnviar').addEventListener('click', () => {
   cart = [];
   renderCart();
   document.getElementById('checkout').style.display = 'none';
+  document.getElementById('clientName').value = '';
+  document.getElementById('enderecoRua').value = '';
+  document.getElementById('enderecoNumero').value = '';
+  document.getElementById('enderecoBairro').value = '';
+  document.getElementById('valorTroco').value = '';
+});
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PedidoFácil — Mobile Grid</title>
+<style>
+:root{
+  --bg:#0f1115; --card:#171922; --muted:#a9b0c1; --text:#e8ecf3; --brand:#6ee7b7; --brand-2:#22d3ee; --danger:#ef4444;
+  --ring: rgba(110,231,183,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; max-width:480px; margin:0 auto;}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;border:none}
+
+/* Header */
+.header{position:sticky;top:0;background:#141722;z-index:100;}
+.header-inner{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #25283a}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600}
+.logo{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--brand),var(--brand-2));}
+.tabs{display:flex;gap:6px}
+.tab{padding:5px 10px;border-radius:999px;border:1px solid #2a2d42;color:var(--muted);font-size:13px}
+.tab.active{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#0a1220;border:none}
+
+/* Categorias cliente */
+.cats{display:flex;overflow-x:auto;gap:8px;padding:10px;background:#141722;}
+.cat{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid #2a2d42;color:#c7cede;white-space:nowrap;font-size:14px;position:relative}
+.cat.active{background:linear-gradient(90deg,rgba(110,231,183,.15),rgba(34,211,238,.15));border-color:#2a3148}
+
+/* Produtos grid cliente */
+.list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+.product{display:flex;flex-direction:column;padding:10px;background:var(--card);border:1px solid #24273a;border-radius:14px}
+.p-body{flex:1;margin-bottom:6px}
+.p-title{font-weight:600;margin-bottom:4px;font-size:14px}
+.p-desc{color:#aab2c6;font-size:12px;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.p-foot{display:flex;justify-content:space-between;align-items:center}
+.price{font-weight:700;font-size:13px}
+.thumb{width:100%;height:80px;background:#0b0d13;background-size:cover;background-position:center;border-radius:8px;margin-top:6px}
+.btn{padding:6px 10px;border-radius:8px;background:#1c1f2c;color:#dbe3f7;font-size:12px}
+.btn.brand{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#0a1220}
+
+/* Botões de ação no admin */
+.action-btns {display: flex;gap: 8px;flex-wrap:wrap;align-items:center;}
+.action-btns .btn {flex: 1 1 90px;text-align:center;}
+
+/* Carrinho fixo */
+.cartbar{position:fixed;bottom:12px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;background:#171a24;border:1px solid #2a3148;border-radius:14px;padding:10px;z-index:200}
+.cartbar strong{font-size:15px}
+
+/* Checkout fullscreen */
+.checkout{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;overflow:auto}
+.sheet{padding:16px}
+.sheet h3{margin-bottom:12px}
+.row{display:flex;flex-direction:column;gap:12px}
+label{font-size:12px;color:#b9c2dd;margin-bottom:4px;display:block}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #2b3050;background:#121522;color:#fff}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline:none}
+.radio-row{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.radio{display:flex;align-items:center;gap:6px;padding:10px;border:1px solid #2b3050;border-radius:8px;font-size:14px;width:100%;}
+.radio input{width:auto;margin-right:8px;}
+
+/* Admin e login */
+.admin{display:none;padding:12px}
+.card{background:var(--card);border:1px solid #24283a;border-radius:12px;padding:12px;margin-bottom:12px}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th,.table td{padding:8px;border-bottom:1px solid #2a2d42;text-align:left}
+
+/* categorias admin listadas */
+.cat-item {display:flex;justify-content:space-between;align-items:center;gap:6px;border:1px solid #2a2d42;border-radius:8px;padding:6px 10px;margin-bottom:6px;background:#1c1f2c;color:var(--text);}
+.cat-item.dragging {opacity: 0.5; background: #2a2d42;}
+
+.admin-login {display: none; padding: 20px; max-width: 320px; margin: 20px auto; background: var(--card); border-radius: 12px; border: 1px solid #24283a;}
+.admin-login h3 {margin-bottom: 16px; text-align: center;}
+.admin-login input {width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #2b3050; background: #121522; color: #fff; font-size: 14px;}
+.admin-login button {width: 100%; padding: 10px; border-radius: 8px; background: linear-gradient(90deg,var(--brand),var(--brand-2)); color: #0a1220; font-weight: 600; font-size: 15px;}
+.admin-login .error {color: var(--danger); margin-bottom: 12px; text-align: center; font-size: 14px;}
+
+/* Confirmação modal */
+.confirm-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:500}
+.confirm-box{width:94%;max-width:420px;background:var(--card);border-radius:12px;padding:16px;border:1px solid #24283a}
+.confirm-box p{margin:0;color:var(--text)}
+.confirm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.confirm-actions .btn{min-width:90px}
+
+/* Ordenação de categorias */
+.sortable-ghost {opacity: 0.4;}
+.drag-handle {cursor: move; padding: 4px 8px; margin-right: 8px; background: #2a2d42; border-radius: 4px;}
+.order-info {font-size: 12px; color: var(--muted); margin-top: 8px;}
+
+/* Opções de pagamento adicionais */
+.payment-options {display: none; margin-top: 10px; padding-left: 20px;}
+.troco-field {display: none; margin-top: 10px;}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand"><div class="logo"></div><span>PedidoFácil</span></div>
+    <nav class="tabs">
+      <a class="tab active" data-tab="cliente">Cliente</a>
+      <a class="tab" data-tab="admin">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<div class="cats" id="cats"></div>
+
+<main id="cliente">
+  <div class="list" id="produtos"></div>
+</main>
+
+<div class="cartbar" id="cartbar" style="display:none">
+  <div>🛒 <strong id="cartCount">0</strong> itens</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <strong id="cartTotalBar">R$ 0,00</strong>
+    <button class="btn brand" id="openCheckout">Ver Carrinho</button>
+    <button class="btn brand" id="finalizeOrder">Finalizar Pedido</button>
+  </div>
+</div>
+
+
+<!-- Checkout fullscreen -->
+<div class="checkout" id="checkout">
+  <div class="sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Finalizar pedido</h3>
+      <button class="btn" id="closeCheckout">Fechar</button>
+    </div>
+	
+    <div class="row">
+      <label for="clientName">Nome do Cliente</label>
+      <input type="text" id="clientName" placeholder="Digite seu nome completo" />
+    </div>
+
+    <div>
+      <h4>Entrega ou retirada</h4>
+      <div class="radio-row">
+        <label class="radio"><input type="radio" name="tipo" value="retirada" checked> Retirada</label>
+        <label class="radio"><input type="radio" name="tipo" value="entrega"> Entrega</label>
+      </div>
+      <div id="enderecoBox" style="display:none;margin-top:10px">
+        <label>Endereço</label><input placeholder="Rua" id="enderecoRua" />
+        <label>Número da casa</label><input placeholder="Ex: 155" id="enderecoNumero" />
+        <label>Bairro</label><input placeholder="Ex: Jardim Novo, Renovação, Vila Nova" id="enderecoBairro" />
+      </div>
+    </div>
+    
+    <div>
+      <h4>Pagamento</h4>
+      <div class="radio-row">
+        <label class="radio"><input type="radio" name="pg" value="pix" checked> Pix</label>
+        <label class="radio"><input type="radio" name="pg" value="cartao"> Cartão</label>
+        <div id="cartaoOptions" class="payment-options">
+          <label class="radio"><input type="radio" name="tipo-cartao" value="credito"> Crédito</label>
+          <label class="radio"><input type="radio" name="tipo-cartao" value="debito"> Débito</label>
+        </div>
+        <label class="radio"><input type="radio" name="pg" value="dinheiro"> Dinheiro</label>
+        <div id="trocoField" class="troco-field">
+          <label for="valorTroco">Valor para troco (opcional)</label>
+          <input type="number" id="valorTroco" placeholder="R$ 0,00" step="0.01" />
+        </div>
+      </div>
+      
+      <div style="margin-top:12px;display:flex;justify-content:space-between">
+        <span>Total</span><strong id="checkoutTotal">R$ 0,00</strong>
+      </div>
+      <button class="btn brand" id="btnEnviar" style="margin-top:12px">Enviar pedido</button>
+    </div>
+    
+    <div style="margin-top:16px">
+      <h4>Resumo</h4>
+      <div id="resumo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Login Admin -->
+<section class="admin-login" id="adminLogin">
+  <h3>Login Admin</h3>
+  <div class="error" id="loginError" style="display:none"></div>
+  <input type="text" id="username" placeholder="Usuário" autocomplete="username" />
+  <input type="password" id="password" placeholder="Senha" autocomplete="current-password" />
+  <button id="btnLogin">Entrar</button>
+</section>
+
+<!-- Admin -->
+<main class="admin" id="admin" style="display:none">
+  <div style="display:flex; justify-content: flex-end; padding: 0 12px 8px;">
+    <button class="btn" id="btnLogout" style="background:#ef4444; color:#fff; border-radius:8px;">Sair</button>
+  </div>
+
+  <!-- Gerenciar Categorias -->
+  <div class="card">
+    <h3>Gerenciar Categorias</h3>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input id="newCategory" placeholder="Nome da categoria" />
+      <button class="btn brand" id="btnAddCat">Adicionar</button>
+    </div>
+    <div class="order-info">Arraste as categorias para reordenar (a primeira será a padrão)</div>
+    <div id="categoryList"></div>
+  </div>
+
+  <!-- Adicionar Produto -->
+  <div class="card">
+    <h3>Adicionar Produto</h3>
+    <input id="prodName" placeholder="Nome" />
+    <textarea id="prodDesc" placeholder="Descrição"></textarea>
+    <input id="prodPrice" placeholder="Preço" type="number" step="0.01" />
+    <select id="prodCategory"><option value="">Selecione a categoria</option></select>
+    <input type="file" id="prodImage" accept="image/*" />
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn brand" id="btnAddProd">Salvar Produto</button>
+      <button class="btn" id="btnCancelEdit" style="display:none;background:#6b7280;color:#fff">Cancelar Edição</button>
+    </div>
+  </div>
+
+  <!-- Tabela Produtos -->
+  <div class="card">
+    <h3>Produtos</h3>
+    <table class="table" id="prodTable"></table>
+  </div>
+</main>
+
+<!-- Confirmação modal -->
+<div class="confirm-overlay" id="confirmDialog">
+  <div class="confirm-box">
+    <p id="confirmMsg">Confirmar ação?</p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirmCancel">Cancelar</button>
+      <button class="btn brand" id="confirmOk">Confirmar</button>
+	  
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+// Dados iniciais
+let produtos = [];
+let categorias = [];
+let filtro = '';
+let cart = [];
+let editProdId = null;
+let confirmCallback = null;
+
+// Chaves para localStorage
+const PRODUTOS_KEY = 'pedidofacil_produtos';
+const CATEGORIAS_KEY = 'pedidofacil_categorias';
+
+// Carregar dados do localStorage
+function carregarDados() {
+  const produtosSalvos = localStorage.getItem(PRODUTOS_KEY);
+  const categoriasSalvas = localStorage.getItem(CATEGORIAS_KEY);
+  
+  if (produtosSalvos) {
+    produtos = JSON.parse(produtosSalvos);
+  } else {
+    // Dados iniciais padrão
+    produtos = [
+      {id:1,nome:'X-Burger',desc:'Pão brioche, blend 150g, queijo.',preco:24.9,categoria:'Lanches',img:'',ativo:true},
+      {id:2,nome:'X-Salada',desc:'Alface, tomate, queijo prato.',preco:26.9,categoria:'Lanches',img:'',ativo:true},
+      {id:3,nome:'Refrigerante Lata',desc:'350ml gelado.',preco:6,categoria:'Bebidas',img:'',ativo:true},
+      {id:4,nome:'Suco Natural',desc:'Laranja 400ml.',preco:10,categoria:'Bebidas',img:'',ativo:true},
+      {id:5,nome:'Batata Média',desc:'Porção crocante.',preco:12,categoria:'Acompanhamentos',img:'',ativo:true},
+      {id:6,nome:'Brownie',desc:'Com calda.',preco:9.5,categoria:'Sobremesas',img:'',ativo:true}
+    ];
+    salvarProdutos();
+  }
+  
+  if (categoriasSalvas) {
+    categorias = JSON.parse(categoriasSalvas);
+    
+    // Garantir que todas as categorias tenham a propriedade ordem
+    let precisaSalvar = false;
+    categorias.forEach((cat, index) => {
+      if (cat.ordem === undefined) {
+        cat.ordem = index;
+        precisaSalvar = true;
+      }
+    });
+    
+    // Ordenar categorias pela propriedade ordem
+    categorias.sort((a, b) => a.ordem - b.ordem);
+    
+    if (precisaSalvar) {
+      salvarCategorias();
+    }
+  } else {
+    // Dados iniciais padrão
+    categorias = [
+      {nome:'Lanches',ativo:true, ordem: 0},
+      {nome:'Bebidas',ativo:true, ordem: 1},
+      {nome:'Acompanhamentos',ativo:true, ordem: 2},
+      {nome:'Sobremesas',ativo:true, ordem: 3}
+    ];
+    salvarCategorias();
+  }
+  
+  // Definir a primeira categoria como filtro padrão
+  if (categorias.length > 0) {
+    const primeiraCategoriaAtiva = categorias.find(c => c.ativo);
+    if (primeiraCategoriaAtiva) {
+      filtro = primeiraCategoriaAtiva.nome;
+    }
+  }
+}
+
+// Salvar produtos no localStorage
+function salvarProdutos() {
+  localStorage.setItem(PRODUTOS_KEY, JSON.stringify(produtos));
+}
+
+// Salvar categorias no localStorage
+function salvarCategorias() {
+  localStorage.setItem(CATEGORIAS_KEY, JSON.stringify(categorias));
+}
+
+const elList = document.getElementById('produtos');
+const cartbar = document.getElementById('cartbar');
+const cartCount = document.getElementById('cartCount');
+const cartTotalBar = document.getElementById('cartTotalBar');
+const confirmDialog = document.getElementById('confirmDialog');
+const confirmMsg = document.getElementById('confirmMsg');
+const confirmOk = document.getElementById('confirmOk');
+const confirmCancel = document.getElementById('confirmCancel');
+
+function fmt(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+
+// Render produtos cliente
+function renderProdutos(){
+  elList.innerHTML = produtos.filter(p => p.categoria === filtro && p.ativo).map(p => `
+    <div class='product'>
+      <div class='p-body'>
+        <div class='p-title'>${p.nome}</div>
+        <div class='p-desc'>${p.desc}</div>
+        <div class='p-foot'>
+          <div class='price'>${fmt(p.preco)}</div>
+          <button class='btn' onclick='add(${p.id})'>+ Carrinho</button>
+        </div>
+      </div>
+      <div class='thumb' style="background-image:url('${p.img||''}')"></div>
+    </div>
+  `).join('');
+}
+
+// Carrinho
+function add(id){
+  let it = cart.find(i => i.id === id);
+  if(it) it.qtd++; 
+  else {
+    let p = produtos.find(x => x.id === id); 
+    cart.push({id:p.id, nome:p.nome, preco:p.preco, qtd:1});
+  }
+  renderCart();
+}
+
+function removeItem(id){
+  cart = cart.filter(i => i.id !== id);
+  renderCart();
+  renderResumo();
+}
+
+function renderCart(){
+  let total = cart.reduce((s, i) => s + i.preco * i.qtd, 0);
+  cartCount.textContent = cart.reduce((s, i) => s + i.qtd, 0);
+  cartTotalBar.textContent = fmt(total);
+  cartbar.style.display = cart.length ? 'flex' : 'none';
+}
+
+// Render resumo carrinho com remover
+function renderResumo(){
+  const resumo = document.getElementById('resumo');
+  resumo.innerHTML = cart.map(i => `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div>${i.nome} - ${fmt(i.preco * i.qtd)}</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="btn" onclick="decreaseQty(${i.id})">-</button>
+        <span>${i.qtd}</span>
+        <button class="btn" onclick="increaseQty(${i.id})">+</button>
+        <button class="btn" style="background:#ef4444;color:#fff" onclick="confirmRemove(${i.id})">Remover</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('checkoutTotal').textContent = fmt(cart.reduce((s, i) => s + i.preco * i.qtd, 0));
+}
+
+// Confirmar remoção
+function confirmRemove(id){
+  confirmMsg.textContent = 'Deseja remover este item do carrinho?';
+  confirmDialog.style.display = 'flex';
+  confirmCallback = () => {
+    removeItem(id); 
+    confirmDialog.style.display = 'none'; 
+    confirmCallback = null;
+  };
+}
+
+confirmOk.addEventListener('click', () => { 
+  if(confirmCallback) confirmCallback(); 
+});
+
+confirmCancel.addEventListener('click', () => { 
+  confirmDialog.style.display = 'none'; 
+  confirmCallback = null; 
+});
+
+function confirmRemoveCat(nome){
+  confirmMsg.textContent = `Deseja remover a categoria "${nome}" e todos os produtos dela?`;
+  confirmDialog.style.display = 'flex';
+  confirmCallback = () => {
+    categorias = categorias.filter(c => c.nome !== nome);
+    produtos = produtos.filter(p => p.categoria !== nome);
+    salvarCategorias();
+    salvarProdutos();
+    renderAdminCats();
+    renderProdutos();
+    renderCats();
+    confirmDialog.style.display = 'none';
+    confirmCallback = null;
+  };
+}
+
+// Funções quantidade
+function increaseQty(id){ 
+  let item = cart.find(i => i.id === id); 
+  if(item) item.qtd++; 
+  renderCart(); 
+  renderResumo();
+}
+
+function decreaseQty(id){ 
+  let item = cart.find(i => i.id === id); 
+  if(item){
+    item.qtd--; 
+    if(item.qtd <= 0) cart = cart.filter(i => i.id !== id);
+  } 
+  renderCart(); 
+  renderResumo();
+}
+
+// Categorias cliente
+const catEl = document.getElementById('cats');
+function renderCats(){
+  // Filtrar apenas categorias ativas e ordenar pela propriedade ordem
+  const categoriasAtivas = categorias
+    .filter(c => c.ativo)
+    .sort((a, b) => a.ordem - b.ordem);
+  
+  catEl.innerHTML = categoriasAtivas.map(c => `
+    <div class='cat ${c.nome === filtro ? 'active' : ''}' onclick="filtro='${c.nome}';renderProdutos();renderCats()">
+      ${c.nome}
+    </div>
+  `).join('');
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('cliente').style.display = tab.dataset.tab === 'cliente' ? 'block' : 'none';
+    document.getElementById('adminLogin').style.display = tab.dataset.tab === 'admin' ? 'block' : 'none';
+    document.getElementById('admin').style.display = 'none';
+  });
+});
+
+// Checkout
+document.getElementById('openCheckout').addEventListener('click', () => {
+  document.getElementById('checkout').style.display = 'block'; 
+  renderResumo();
+});
+
+document.getElementById('finalizeOrder').addEventListener('click', () => {
+  document.getElementById('checkout').style.display = 'block';
+  renderResumo();
+});
+
+document.getElementById('closeCheckout').addEventListener('click', () => {
+  document.getElementById('checkout').style.display = 'none';
+});
+
+// Controle de exibição dos campos de endereço
+document.querySelectorAll('input[name="tipo"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('enderecoBox').style.display = r.value === 'entrega' ? 'block' : 'none';
+  });
+});
+
+// Controle de exibição das opções de pagamento
+document.querySelectorAll('input[name="pg"]').forEach(r => {
+  r.addEventListener('change', () => {
+    // Esconder todos os campos extras primeiro
+    document.getElementById('cartaoOptions').style.display = 'none';
+    document.getElementById('trocoField').style.display = 'none';
+    
+    // Mostrar campos conforme a seleção
+    if (r.value === 'cartao') {
+      document.getElementById('cartaoOptions').style.display = 'block';
+    } else if (r.value === 'dinheiro') {
+      document.getElementById('trocoField').style.display = 'block';
+    }
+  });
+});
+
+// Login admin
+document.addEventListener('DOMContentLoaded', () => {
+  // Carregar dados do localStorage
+  carregarDados();
+  
+  // Renderizar interface
+  renderCats();
+  renderProdutos();
+  renderCart();
+  
+  const adminUser = 'admin';
+  const adminPass = '1234';
+  const loginErr = document.getElementById('loginError');
+
+  document.getElementById('btnLogin').addEventListener('click', () => {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+
+    if(u === adminUser && p === adminPass){
+      document.getElementById('adminLogin').style.display = 'none';
+      document.getElementById('admin').style.display = 'block';
+      loginErr.style.display = 'none';
+      renderAdminCats();
+      renderAdminProds();
+      
+      // Inicializar a funcionalidade de arrastar e soltar
+      initSortableCategories();
+    } else {
+      loginErr.style.display = 'block';
+      loginErr.textContent = 'Usuário ou senha incorretos';
+    }
+  });
+
+  document.getElementById('btnLogout').addEventListener('click', () => {
+    document.getElementById('admin').style.display = 'none';
+    document.getElementById('adminLogin').style.display = 'block';
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+  });
+});
+
+// Inicializar a funcionalidade de arrastar e soltar para categorias
+function initSortableCategories() {
+  const categoryList = document.getElementById('categoryList');
+  
+  if (categoryList) {
+    new Sortable(categoryList, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      handle: '.drag-handle',
+      onEnd: function(evt) {
+        // Atualizar a ordem das categorias
+        const items = categoryList.querySelectorAll('.cat-item');
+        items.forEach((item, index) => {
+          const categoryName = item.querySelector('span').textContent;
+          const category = categorias.find(c => c.nome === categoryName);
+          if (category) {
+            category.ordem = index;
+          }
+        });
+        
+        // Salvar a nova ordem
+        salvarCategorias();
+        
+        // Atualizar a exibição para o cliente
+        renderCats();
+      }
+    });
+  }
+}
+
+// Alterna ativo/inativo de produtos
+function toggleProd(id){
+  let p = produtos.find(x => x.id === id);
+  if(p){
+    p.ativo = !p.ativo;
+    salvarProdutos();
+    renderAdminProds();
+    renderProdutos();
+  }
+}
+
+// Alterna ativo/inativo de categorias
+function toggleCat(nome){
+  let c = categorias.find(x => x.nome === nome);
+  if(c){
+    c.ativo = !c.ativo;
+    salvarCategorias();
+    renderAdminCats();
+    renderCats();
+  }
+}
+
+// Admin categorias
+function renderAdminCats(){
+  const list = document.getElementById('categoryList');
+  
+  // Ordenar categorias pela propriedade ordem
+  const categoriasOrdenadas = [...categorias].sort((a, b) => a.ordem - b.ordem);
+  
+  list.innerHTML = categoriasOrdenadas.map(c => `
+    <div class="cat-item">
+      <div style="display:flex;align-items:center;">
+        <span class="drag-handle">≡</span>
+        <span>${c.nome}</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn" style="background:${c.ativo ? '#fbbf24' : '#6b7280'}; color:#0a1220" onclick="toggleCat('${c.nome}')">
+          ${c.ativo ? 'Ativo' : 'Inativo'}
+        </button>
+        <button class="btn" style="background:#ef4444;color:#fff" onclick="confirmRemoveCat('${c.nome}')">Remover</button>
+      </div>
+    </div>
+  `).join('');
+
+  const sel = document.getElementById('prodCategory');
+  sel.innerHTML = '<option value="">Selecione a categoria</option>' + 
+    categorias.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+}
+
+document.getElementById('btnAddCat').addEventListener('click', () => {
+  const val = document.getElementById('newCategory').value.trim();
+  if(val && !categorias.find(c => c.nome === val)){
+    // Determinar a próxima ordem disponível
+    const maxOrdem = Math.max(...categorias.map(c => c.ordem), -1);
+    categorias.push({nome: val, ativo: true, ordem: maxOrdem + 1}); 
+    salvarCategorias();
+    renderAdminCats(); 
+    document.getElementById('newCategory').value = ''; 
+    renderCats();
+  }
+});
+
+// Admin produtos
+function renderAdminProds(){
+  const table = document.getElementById('prodTable');
+  table.innerHTML = '<tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Status</th><th>Ações</th></tr>' +
+    produtos.map(p => `<tr>
+      <td>${p.nome}</td>
+      <td>${p.categoria}</td>
+      <td>${fmt(p.preco)}</td>
+      <td>
+        <button class="btn" style="background:${p.ativo ? '#fbbf24' : '#6b7280'}; color:#0a1220" onclick="toggleProd(${p.id})">
+          ${p.ativo ? 'Ativo' : 'Inativo'}
+        </button>
+      </td>
+      <td class="action-btns">
+        <button class="btn" onclick="editProd(${p.id})">Editar</button>
+        <button class="btn" onclick="removeProd(${p.id})" style="background:#ef4444;color:#fff">Remover</button>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('btnAddProd').addEventListener('click', () => {
+  const n = document.getElementById('prodName').value;
+  const d = document.getElementById('prodDesc').value;
+  const p = parseFloat(document.getElementById('prodPrice').value);
+  const c = document.getElementById('prodCategory').value;
+  const img = ''; 
+  
+  if(!n || !d || !p || !c) return alert('Preencha todos os campos');
+  
+  if(editProdId){
+    let prod = produtos.find(x => x.id === editProdId);
+    prod.nome = n; 
+    prod.desc = d; 
+    prod.preco = p; 
+    prod.categoria = c; 
+    prod.img = img;
+    editProdId = null;
+    document.getElementById('btnCancelEdit').style.display = 'none';
+  } else {
+    produtos.push({id: Date.now(), nome: n, desc: d, preco: p, categoria: c, img: img, ativo: true});
+  }
+  
+  salvarProdutos();
+  renderAdminProds();
+  renderProdutos();
+  
+  document.getElementById('prodName').value = ''; 
+  document.getElementById('prodDesc').value = ''; 
+  document.getElementById('prodPrice').value = ''; 
+  document.getElementById('prodCategory').value = '';
+});
+
+document.getElementById('btnCancelEdit').addEventListener('click', () => {
+  editProdId = null;
+  document.getElementById('btnCancelEdit').style.display = 'none';
+  document.getElementById('prodName').value = ''; 
+  document.getElementById('prodDesc').value = ''; 
+  document.getElementById('prodPrice').value = ''; 
+  document.getElementById('prodCategory').value = '';
+});
+
+function editProd(id){
+  let p = produtos.find(x => x.id === id);
+  document.getElementById('prodName').value = p.nome;
+  document.getElementById('prodDesc').value = p.desc;
+  document.getElementById('prodPrice').value = p.preco;
+  document.getElementById('prodCategory').value = p.categoria;
+  editProdId = id;
+  document.getElementById('btnCancelEdit').style.display = 'inline-block';
+}
+
+function removeProd(id){
+  confirmMsg.textContent = 'Deseja remover este produto?';
+  confirmDialog.style.display = 'flex';
+  confirmCallback = () => {
+    produtos = produtos.filter(p => p.id !== id);
+    salvarProdutos();
+    renderAdminProds();
+    renderProdutos();
+    confirmDialog.style.display = 'none';
+    confirmCallback = null;
+  };
+}
+
+// Enviar pedido via WhatsApp
+document.getElementById('btnEnviar').addEventListener('click', () => {
+  const clientName = document.getElementById('clientName').value.trim();
+  if (!clientName) return alert('Por favor, informe seu nome.');
+
+  const tipoEntrega = document.querySelector('input[name="tipo"]:checked').value;
+  let endereco = '';
+  if (tipoEntrega === 'entrega') {
+    const rua = document.getElementById('enderecoRua').value.trim();
+    const numero = document.getElementById('enderecoNumero').value.trim();
+    const bairro = document.getElementById('enderecoBairro').value.trim();
+    
+    if (!rua || !numero || !bairro) {
+      return alert('Por favor, preencha todos os campos de endereço.');
+    }
+    
+    endereco = `Rua: ${rua}, Nº: ${numero}, Bairro: ${bairro}`;
+  }
+
+  const formaPg = document.querySelector('input[name="pg"]:checked').value;
+  let detalhesPagamento = formaPg;
+
+  // Adicionar detalhes específicos do pagamento
+  if (formaPg === 'cartao') {
+    const tipoCartao = document.querySelector('input[name="tipo-cartao"]:checked');
+    if (tipoCartao) {
+      detalhesPagamento += ` (${tipoCartao.value})`;
+    } else {
+      return alert('Por favor, selecione o tipo do cartão.');
+    }
+  } else if (formaPg === 'dinheiro') {
+    const valorTroco = document.getElementById('valorTroco').value;
+    if (valorTroco) {
+      detalhesPagamento += ` - Troco para R$ ${parseFloat(valorTroco).toFixed(2)}`;
+    }
+  }
+
+  if (cart.length === 0) return alert('Seu carrinho está vazio.');
+
+  // Montar mensagem do pedido
+  let mensagem = `*PedidoFácil - Novo Pedido*%0A%0A`;
+  mensagem += `*Cliente:* ${clientName}%0A`;
+  mensagem += `*Tipo:* ${tipoEntrega === 'entrega' ? 'Entrega' : 'Retirada'}%0A`;
+  if (endereco) mensagem += `*Endereço:* ${endereco}%0A`;
+  mensagem += `*Pagamento:* ${detalhesPagamento}%0A%0A`;
+  mensagem += `*Itens do pedido:*%0A`;
+  
+  cart.forEach(item => {
+    mensagem += `➡️ ${item.nome} x${item.qtd} = ${fmt(item.preco * item.qtd)}%0A`;
+  });
+  
+  mensagem += `%0A*Total: ${fmt(cart.reduce((s, i) => s + i.preco * i.qtd, 0))}*`;
+
+  // Número do WhatsApp da lanchonete (substitua pelo número real)
+  const whatsappNumber = '5535999027681';
+
+  // Link WhatsApp Web / App Mobile
+  const url = `https://wa.me/${whatsappNumber}?text=${mensagem}`;
+
+  // Abrir link
+  window.open(url, '_blank');
+  
+  // Limpar carrinho após envio
+  cart = [];
+  renderCart();
+  document.getElementById('checkout').style.display = 'none';
+  document.getElementById('clientName').value = '';
+  document.getElementById('enderecoRua').value = '';
+  document.getElementById('enderecoNumero').value = '';
+  document.getElementById('enderecoBairro').value = '';
+  document.getElementById('valorTroco').value = '';
 });
 </script>
 </body>
