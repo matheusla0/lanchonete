@@ -41,8 +41,8 @@ button{cursor:pointer;border:none}
 .btn.brand{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#0a1220}
 
 /* Botões de ação no admin */
-.action-btns {display: flex;gap: 8px;flex-wrap: wrap;align-items: center;}
-.action-btns .btn {flex: 1 1 90px;text-align: center;}
+.action-btns {display: flex;gap: 8px;flex-wrap:wrap;align-items:center;}
+.action-btns .btn {flex: 1 1 90px;text-align:center;}
 
 /* Carrinho fixo */
 .cartbar{position:fixed;bottom:12px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;background:#171a24;border:1px solid #2a3148;border-radius:14px;padding:10px;z-index:200}
@@ -216,34 +216,80 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px var(--ring);outline
 
 <script>
 // Dados iniciais
-let produtos=[
-  {id:1,nome:'X-Burger',desc:'Pão brioche, blend 150g, queijo.',preco:24.9,categoria:'Lanches',img:'',ativo:true},
-  {id:2,nome:'X-Salada',desc:'Alface, tomate, queijo prato.',preco:26.9,categoria:'Lanches',img:'',ativo:true},
-  {id:3,nome:'Refrigerante Lata',desc:'350ml gelado.',preco:6,categoria:'Bebidas',img:'',ativo:true},
-  {id:4,nome:'Suco Natural',desc:'Laranja 400ml.',preco:10,categoria:'Bebidas',img:'',ativo:true},
-  {id:5,nome:'Batata Média',desc:'Porção crocante.',preco:12,categoria:'Acompanhamentos',img:'',ativo:true},
-  {id:6,nome:'Brownie',desc:'Com calda.',preco:9.5,categoria:'Sobremesas',img:'',ativo:true}
-];
-let categorias=[{nome:'Lanches',ativo:true},{nome:'Bebidas',ativo:true},{nome:'Acompanhamentos',ativo:true},{nome:'Sobremesas',ativo:true}];
-let filtro='Lanches';
-let cart=[];
-let editProdId=null;
-let confirmCallback=null;
+let produtos = [];
+let categorias = [];
+let filtro = '';
+let cart = [];
+let editProdId = null;
+let confirmCallback = null;
 
-const elList=document.getElementById('produtos');
-const cartbar=document.getElementById('cartbar');
-const cartCount=document.getElementById('cartCount');
-const cartTotalBar=document.getElementById('cartTotalBar');
-const confirmDialog=document.getElementById('confirmDialog');
-const confirmMsg=document.getElementById('confirmMsg');
-const confirmOk=document.getElementById('confirmOk');
-const confirmCancel=document.getElementById('confirmCancel');
+// Chaves para localStorage
+const PRODUTOS_KEY = 'pedidofacil_produtos';
+const CATEGORIAS_KEY = 'pedidofacil_categorias';
+
+// Carregar dados do localStorage
+function carregarDados() {
+  const produtosSalvos = localStorage.getItem(PRODUTOS_KEY);
+  const categoriasSalvas = localStorage.getItem(CATEGORIAS_KEY);
+  
+  if (produtosSalvos) {
+    produtos = JSON.parse(produtosSalvos);
+  } else {
+    // Dados iniciais padrão
+    produtos = [
+      {id:1,nome:'X-Burger',desc:'Pão brioche, blend 150g, queijo.',preco:24.9,categoria:'Lanches',img:'',ativo:true},
+      {id:2,nome:'X-Salada',desc:'Alface, tomate, queijo prato.',preco:26.9,categoria:'Lanches',img:'',ativo:true},
+      {id:3,nome:'Refrigerante Lata',desc:'350ml gelado.',preco:6,categoria:'Bebidas',img:'',ativo:true},
+      {id:4,nome:'Suco Natural',desc:'Laranja 400ml.',preco:10,categoria:'Bebidas',img:'',ativo:true},
+      {id:5,nome:'Batata Média',desc:'Porção crocante.',preco:12,categoria:'Acompanhamentos',img:'',ativo:true},
+      {id:6,nome:'Brownie',desc:'Com calda.',preco:9.5,categoria:'Sobremesas',img:'',ativo:true}
+    ];
+    salvarProdutos();
+  }
+  
+  if (categoriasSalvas) {
+    categorias = JSON.parse(categoriasSalvas);
+  } else {
+    // Dados iniciais padrão
+    categorias = [
+      {nome:'Lanches',ativo:true},
+      {nome:'Bebidas',ativo:true},
+      {nome:'Acompanhamentos',ativo:true},
+      {nome:'Sobremesas',ativo:true}
+    ];
+    salvarCategorias();
+  }
+  
+  // Definir a primeira categoria como filtro padrão
+  if (categorias.length > 0) {
+    filtro = categorias[0].nome;
+  }
+}
+
+// Salvar produtos no localStorage
+function salvarProdutos() {
+  localStorage.setItem(PRODUTOS_KEY, JSON.stringify(produtos));
+}
+
+// Salvar categorias no localStorage
+function salvarCategorias() {
+  localStorage.setItem(CATEGORIAS_KEY, JSON.stringify(categorias));
+}
+
+const elList = document.getElementById('produtos');
+const cartbar = document.getElementById('cartbar');
+const cartCount = document.getElementById('cartCount');
+const cartTotalBar = document.getElementById('cartTotalBar');
+const confirmDialog = document.getElementById('confirmDialog');
+const confirmMsg = document.getElementById('confirmMsg');
+const confirmOk = document.getElementById('confirmOk');
+const confirmCancel = document.getElementById('confirmCancel');
 
 function fmt(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
 
 // Render produtos cliente
 function renderProdutos(){
-  elList.innerHTML = produtos.filter(p=>p.categoria===filtro && p.ativo).map(p=>`
+  elList.innerHTML = produtos.filter(p => p.categoria === filtro && p.ativo).map(p => `
     <div class='product'>
       <div class='p-body'>
         <div class='p-title'>${p.nome}</div>
@@ -260,28 +306,34 @@ function renderProdutos(){
 
 // Carrinho
 function add(id){
-  let it=cart.find(i=>i.id===id);
-  if(it) it.qtd++; else {let p=produtos.find(x=>x.id===id); cart.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1})}
+  let it = cart.find(i => i.id === id);
+  if(it) it.qtd++; 
+  else {
+    let p = produtos.find(x => x.id === id); 
+    cart.push({id:p.id, nome:p.nome, preco:p.preco, qtd:1});
+  }
   renderCart();
 }
+
 function removeItem(id){
-  cart = cart.filter(i=>i.id!==id);
+  cart = cart.filter(i => i.id !== id);
   renderCart();
   renderResumo();
 }
+
 function renderCart(){
-  let total=cart.reduce((s,i)=>s+i.preco*i.qtd,0);
-  cartCount.textContent=cart.reduce((s,i)=>s+i.qtd,0);
-  cartTotalBar.textContent=fmt(total);
-  cartbar.style.display=cart.length?'flex':'none';
+  let total = cart.reduce((s, i) => s + i.preco * i.qtd, 0);
+  cartCount.textContent = cart.reduce((s, i) => s + i.qtd, 0);
+  cartTotalBar.textContent = fmt(total);
+  cartbar.style.display = cart.length ? 'flex' : 'none';
 }
 
 // Render resumo carrinho com remover
 function renderResumo(){
   const resumo = document.getElementById('resumo');
-  resumo.innerHTML = cart.map(i=>`
+  resumo.innerHTML = cart.map(i => `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div>${i.nome} - ${fmt(i.preco*i.qtd)}</div>
+      <div>${i.nome} - ${fmt(i.preco * i.qtd)}</div>
       <div style="display:flex;gap:4px;align-items:center">
         <button class="btn" onclick="decreaseQty(${i.id})">-</button>
         <span>${i.qtd}</span>
@@ -290,93 +342,149 @@ function renderResumo(){
       </div>
     </div>
   `).join('');
-  document.getElementById('checkoutTotal').textContent = fmt(cart.reduce((s,i)=>s+i.preco*i.qtd,0));
+  document.getElementById('checkoutTotal').textContent = fmt(cart.reduce((s, i) => s + i.preco * i.qtd, 0));
 }
 
 // Confirmar remoção
 function confirmRemove(id){
   confirmMsg.textContent = 'Deseja remover este item do carrinho?';
-  confirmDialog.style.display='flex';
-  confirmCallback=()=>{removeItem(id); confirmDialog.style.display='none'; confirmCallback=null;};
+  confirmDialog.style.display = 'flex';
+  confirmCallback = () => {
+    removeItem(id); 
+    confirmDialog.style.display = 'none'; 
+    confirmCallback = null;
+  };
 }
-confirmOk.addEventListener('click',()=>{ if(confirmCallback) confirmCallback(); });
-confirmCancel.addEventListener('click',()=>{ confirmDialog.style.display='none'; confirmCallback=null; });
+
+confirmOk.addEventListener('click', () => { 
+  if(confirmCallback) confirmCallback(); 
+});
+
+confirmCancel.addEventListener('click', () => { 
+  confirmDialog.style.display = 'none'; 
+  confirmCallback = null; 
+});
 
 function confirmRemoveCat(nome){
   confirmMsg.textContent = `Deseja remover a categoria "${nome}" e todos os produtos dela?`;
-  confirmDialog.style.display='flex';
+  confirmDialog.style.display = 'flex';
   confirmCallback = () => {
     categorias = categorias.filter(c => c.nome !== nome);
     produtos = produtos.filter(p => p.categoria !== nome);
-    renderAdminCats();  // atualiza lista de categorias admin
-    renderProdutos();   // atualiza lista de produtos cliente
-    renderCats();       // atualiza categorias cliente
+    salvarCategorias();
+    salvarProdutos();
+    renderAdminCats();
+    renderProdutos();
+    renderCats();
     confirmDialog.style.display = 'none';
     confirmCallback = null;
   };
 }
 
 // Funções quantidade
-function increaseQty(id){ let item = cart.find(i => i.id === id); if(item) item.qtd++; renderCart(); renderResumo();}
-function decreaseQty(id){ let item = cart.find(i => i.id === id); if(item){item.qtd--; if(item.qtd <= 0) cart = cart.filter(i => i.id !== id);} renderCart(); renderResumo();}
+function increaseQty(id){ 
+  let item = cart.find(i => i.id === id); 
+  if(item) item.qtd++; 
+  renderCart(); 
+  renderResumo();
+}
+
+function decreaseQty(id){ 
+  let item = cart.find(i => i.id === id); 
+  if(item){
+    item.qtd--; 
+    if(item.qtd <= 0) cart = cart.filter(i => i.id !== id);
+  } 
+  renderCart(); 
+  renderResumo();
+}
 
 // Categorias cliente
-const catEl=document.getElementById('cats');
-function renderCats(){catEl.innerHTML=categorias.filter(c=>c.ativo).map(c=>`<div class='cat ${c.nome===filtro?'active':''}' onclick="filtro='${c.nome}';renderProdutos();renderCats()">${c.nome}</div>`).join('');}
-renderCats();
+const catEl = document.getElementById('cats');
+function renderCats(){
+  catEl.innerHTML = categorias.filter(c => c.ativo).map(c => `
+    <div class='cat ${c.nome === filtro ? 'active' : ''}' onclick="filtro='${c.nome}';renderProdutos();renderCats()">
+      ${c.nome}
+    </div>
+  `).join('');
+}
 
 // Tabs
-document.querySelectorAll('.tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    document.getElementById('cliente').style.display=tab.dataset.tab==='cliente'?'block':'none';
-    document.getElementById('adminLogin').style.display=tab.dataset.tab==='admin'?'block':'none';
-    document.getElementById('admin').style.display='none';
-  })
+    document.getElementById('cliente').style.display = tab.dataset.tab === 'cliente' ? 'block' : 'none';
+    document.getElementById('adminLogin').style.display = tab.dataset.tab === 'admin' ? 'block' : 'none';
+    document.getElementById('admin').style.display = 'none';
+  });
 });
 
 // Checkout
-document.getElementById('openCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='block'; renderResumo();});
-document.getElementById('finalizeOrder').addEventListener('click', () => {document.getElementById('checkout').style.display = 'block';renderResumo();
+document.getElementById('openCheckout').addEventListener('click', () => {
+  document.getElementById('checkout').style.display = 'block'; 
+  renderResumo();
 });
-document.getElementById('closeCheckout').addEventListener('click',()=>{document.getElementById('checkout').style.display='none';});
-document.querySelectorAll('input[name="tipo"]').forEach(r=>{r.addEventListener('change',()=>{document.getElementById('enderecoBox').style.display=r.value==='entrega'?'block':'none'})});
+
+document.getElementById('finalizeOrder').addEventListener('click', () => {
+  document.getElementById('checkout').style.display = 'block';
+  renderResumo();
+});
+
+document.getElementById('closeCheckout').addEventListener('click', () => {
+  document.getElementById('checkout').style.display = 'none';
+});
+
+document.querySelectorAll('input[name="tipo"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('enderecoBox').style.display = r.value === 'entrega' ? 'block' : 'none';
+  });
+});
 
 // Login admin
 document.addEventListener('DOMContentLoaded', () => {
-  const adminUser='admin';
-  const adminPass='1234';
-  const loginErr=document.getElementById('loginError');
+  // Carregar dados do localStorage
+  carregarDados();
+  
+  // Renderizar interface
+  renderCats();
+  renderProdutos();
+  renderCart();
+  
+  const adminUser = 'lanche123';
+  const adminPass = 'avilareis';
+  const loginErr = document.getElementById('loginError');
 
-  document.getElementById('btnLogin').addEventListener('click',()=>{
-    const u=document.getElementById('username').value.trim();
-    const p=document.getElementById('password').value.trim();
+  document.getElementById('btnLogin').addEventListener('click', () => {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
 
-    if(u===adminUser && p===adminPass){
-      document.getElementById('adminLogin').style.display='none';
-      document.getElementById('admin').style.display='block';
-      loginErr.style.display='none';
+    if(u === adminUser && p === adminPass){
+      document.getElementById('adminLogin').style.display = 'none';
+      document.getElementById('admin').style.display = 'block';
+      loginErr.style.display = 'none';
       renderAdminCats();
       renderAdminProds();
     } else {
-      loginErr.style.display='block';
-      loginErr.textContent='Usuário ou senha incorretos';
+      loginErr.style.display = 'block';
+      loginErr.textContent = 'Usuário ou senha incorretos';
     }
   });
 
-  document.getElementById('btnLogout').addEventListener('click',()=>{
-    document.getElementById('admin').style.display='none';
-    document.getElementById('adminLogin').style.display='block';
-    document.getElementById('username').value='';
-    document.getElementById('password').value='';
+  document.getElementById('btnLogout').addEventListener('click', () => {
+    document.getElementById('admin').style.display = 'none';
+    document.getElementById('adminLogin').style.display = 'block';
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
   });
 });
+
 // Alterna ativo/inativo de produtos
 function toggleProd(id){
   let p = produtos.find(x => x.id === id);
   if(p){
     p.ativo = !p.ativo;
+    salvarProdutos();
     renderAdminProds();
     renderProdutos();
   }
@@ -387,6 +495,7 @@ function toggleCat(nome){
   let c = categorias.find(x => x.nome === nome);
   if(c){
     c.ativo = !c.ativo;
+    salvarCategorias();
     renderAdminCats();
     renderCats();
   }
@@ -412,19 +521,22 @@ function renderAdminCats(){
     categorias.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
 }
 
-
-document.getElementById('btnAddCat').addEventListener('click',()=>{
-  const val=document.getElementById('newCategory').value.trim();
-  if(val && !categorias.find(c=>c.nome===val)){categorias.push({nome:val,ativo:true}); renderAdminCats(); document.getElementById('newCategory').value=''; renderCats();}
+document.getElementById('btnAddCat').addEventListener('click', () => {
+  const val = document.getElementById('newCategory').value.trim();
+  if(val && !categorias.find(c => c.nome === val)){
+    categorias.push({nome: val, ativo: true}); 
+    salvarCategorias();
+    renderAdminCats(); 
+    document.getElementById('newCategory').value = ''; 
+    renderCats();
+  }
 });
-
-function removeCat(nome){categorias=categorias.filter(c=>c.nome!==nome); produtos=produtos.filter(p=>p.categoria!==nome); renderAdminCats(); renderProdutos(); renderCats();}
 
 // Admin produtos
 function renderAdminProds(){
-  const table=document.getElementById('prodTable');
-  table.innerHTML='<tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Status</th><th>Ações</th></tr>'+
-    produtos.map(p=>`<tr>
+  const table = document.getElementById('prodTable');
+  table.innerHTML = '<tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Status</th><th>Ações</th></tr>' +
+    produtos.map(p => `<tr>
       <td>${p.nome}</td>
       <td>${p.categoria}</td>
       <td>${fmt(p.preco)}</td>
@@ -440,47 +552,63 @@ function renderAdminProds(){
     </tr>`).join('');
 }
 
-
-document.getElementById('btnAddProd').addEventListener('click',()=>{
-  const n=document.getElementById('prodName').value;
-  const d=document.getElementById('prodDesc').value;
-  const p=parseFloat(document.getElementById('prodPrice').value);
-  const c=document.getElementById('prodCategory').value;
-  const img=''; 
+document.getElementById('btnAddProd').addEventListener('click', () => {
+  const n = document.getElementById('prodName').value;
+  const d = document.getElementById('prodDesc').value;
+  const p = parseFloat(document.getElementById('prodPrice').value);
+  const c = document.getElementById('prodCategory').value;
+  const img = ''; 
+  
   if(!n || !d || !p || !c) return alert('Preencha todos os campos');
+  
   if(editProdId){
-    let prod=produtos.find(x=>x.id===editProdId);
-    prod.nome=n; prod.desc=d; prod.preco=p; prod.categoria=c; prod.img=img;
-    editProdId=null;
-    document.getElementById('btnCancelEdit').style.display='none';
+    let prod = produtos.find(x => x.id === editProdId);
+    prod.nome = n; 
+    prod.desc = d; 
+    prod.preco = p; 
+    prod.categoria = c; 
+    prod.img = img;
+    editProdId = null;
+    document.getElementById('btnCancelEdit').style.display = 'none';
   } else {
-    produtos.push({id:Date.now(),nome:n,desc:d,preco:p,categoria:c,img:img,ativo:true});
+    produtos.push({id: Date.now(), nome: n, desc: d, preco: p, categoria: c, img: img, ativo: true});
   }
+  
+  salvarProdutos();
   renderAdminProds();
   renderProdutos();
-  document.getElementById('prodName').value=''; document.getElementById('prodDesc').value=''; document.getElementById('prodPrice').value=''; document.getElementById('prodCategory').value='';
-});
-document.getElementById('btnCancelEdit').addEventListener('click',()=>{
-  editProdId=null;
-  document.getElementById('btnCancelEdit').style.display='none';
-  document.getElementById('prodName').value=''; document.getElementById('prodDesc').value=''; document.getElementById('prodPrice').value=''; document.getElementById('prodCategory').value='';
+  
+  document.getElementById('prodName').value = ''; 
+  document.getElementById('prodDesc').value = ''; 
+  document.getElementById('prodPrice').value = ''; 
+  document.getElementById('prodCategory').value = '';
 });
 
+document.getElementById('btnCancelEdit').addEventListener('click', () => {
+  editProdId = null;
+  document.getElementById('btnCancelEdit').style.display = 'none';
+  document.getElementById('prodName').value = ''; 
+  document.getElementById('prodDesc').value = ''; 
+  document.getElementById('prodPrice').value = ''; 
+  document.getElementById('prodCategory').value = '';
+});
 
 function editProd(id){
-  let p=produtos.find(x=>x.id===id);
-  document.getElementById('prodName').value=p.nome;
-  document.getElementById('prodDesc').value=p.desc;
-  document.getElementById('prodPrice').value=p.preco;
-  document.getElementById('prodCategory').value=p.categoria;
-  editProdId=id;
-  document.getElementById('btnCancelEdit').style.display='inline-block';
+  let p = produtos.find(x => x.id === id);
+  document.getElementById('prodName').value = p.nome;
+  document.getElementById('prodDesc').value = p.desc;
+  document.getElementById('prodPrice').value = p.preco;
+  document.getElementById('prodCategory').value = p.categoria;
+  editProdId = id;
+  document.getElementById('btnCancelEdit').style.display = 'inline-block';
 }
+
 function removeProd(id){
   confirmMsg.textContent = 'Deseja remover este produto?';
   confirmDialog.style.display = 'flex';
   confirmCallback = () => {
     produtos = produtos.filter(p => p.id !== id);
+    salvarProdutos();
     renderAdminProds();
     renderProdutos();
     confirmDialog.style.display = 'none';
@@ -488,9 +616,7 @@ function removeProd(id){
   };
 }
 
-// Inicial
-renderProdutos();
-renderCart();
+// Enviar pedido via WhatsApp
 document.getElementById('btnEnviar').addEventListener('click', () => {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return alert('Por favor, informe seu nome.');
@@ -518,7 +644,7 @@ document.getElementById('btnEnviar').addEventListener('click', () => {
   cart.forEach(item => {
     mensagem += `- ${item.nome} x${item.qtd} = ${fmt(item.preco * item.qtd)}\n`;
   });
-  mensagem += `\nTotal: ${fmt(cart.reduce((s,i)=>s+i.preco*i.qtd,0))}`;
+  mensagem += `\nTotal: ${fmt(cart.reduce((s, i) => s + i.preco * i.qtd, 0))}`;
 
   // Número do WhatsApp da lanchonete (substitua pelo número real, no formato internacional, sem "+" ou espaços)
   const whatsappNumber = '5535999027681';
@@ -528,8 +654,12 @@ document.getElementById('btnEnviar').addEventListener('click', () => {
 
   // Abrir link
   window.open(url, '_blank');
+  
+  // Limpar carrinho após envio
+  cart = [];
+  renderCart();
+  document.getElementById('checkout').style.display = 'none';
 });
-
 </script>
 </body>
 </html>
